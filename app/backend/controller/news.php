@@ -190,6 +190,7 @@ class backend_controller_news extends backend_db_news{
                 'name_news'         => $page['name_news'],
                 'url_news'          => $page['url_news'],
                 'content_news'      => $page['content_news'],
+                'resume_news'       => $page['resume_news'],
                 'date_publish'      => $datePublish,
                 'published_news'    => $page['published_news'],
                 'public_url'        => $publicUrl,
