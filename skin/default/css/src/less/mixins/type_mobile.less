@@ -72,7 +72,7 @@ blockquote {
 	text-align: center;
 	.list-unstyled;
 	.list-inline;
-	.normalize-link(@main-color);
+	//.normalize-link(@main-color);
 
 	li {
 		border-right: 1px solid #959595;
@@ -88,13 +88,23 @@ blockquote {
 	}
 }
 .link-list {
-	.normalize-link(@text-color);
+	//.normalize-link(@text-color);
 	 li {
 		 a {
 			 display: inline-block;
 			 padding: 2px 0 3px;
 		 }
 	 }
+}
+
+.touchscreen {
+	.link-list {
+		li {
+			a {
+				padding: 10px 0;
+			}
+		}
+	}
 }
 
 //

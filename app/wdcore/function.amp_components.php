@@ -28,6 +28,8 @@ function smarty_function_amp_components($params)
 	$content = $params['content'];
 	if(!isset($params['image'])) $params['image'] = true;
 	if(!isset($params['gallery'])) $params['gallery'] = true;
+	if(!isset($params['carousel'])) $params['carousel'] = true;
+    if(!isset($params['youtube'])) $params['youtube'] = true;
 	$components = array();
 
 	// --- Search for img-zoom anchor to convert them into apm-image-lightbox components
@@ -41,9 +43,15 @@ function smarty_function_amp_components($params)
 	if($params['gallery']) {
 		if(preg_match('/<a(.(?!<\/a>))*(img-gallery)(.(?!<a))*<\/a>/i',$content)) {
 			$components[] = '<script async custom-element="amp-lightbox" src="https://cdn.ampproject.org/v0/amp-lightbox-0.1.js"></script>';
-			$components[] = '<script async custom-element="amp-carousel" src="https://cdn.ampproject.org/v0/amp-carousel-0.1.js"></script>';
+			if($params['carousel']) $components[] = '<script async custom-element="amp-carousel" src="https://cdn.ampproject.org/v0/amp-carousel-0.1.js"></script>';
 		}
 	}
+    // --- Search for iframe youtube anchor to convert them into amp-youtube
+    if($params['youtube']) {
+        if(preg_match('/<iframe(.(?!<\/iframe>)).*(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11}).*(.(?!<iframe))*<\/iframe>/i',$content)) {
+            $components[] = '<script async custom-element="amp-youtube" src="https://cdn.ampproject.org/v0/amp-youtube-0.1.js"></script>';
+        }
+    }
 
 	echo implode('',$components);
 }

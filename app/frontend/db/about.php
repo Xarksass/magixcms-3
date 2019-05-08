@@ -25,15 +25,43 @@ class frontend_db_about
 				case 'pages':
 					$config["conditions"] ? $conditions = $config["conditions"] : $conditions = '';
 					$sql = "SELECT
-							p.*,c.*,lang.iso_lang, lang.default_lang
+								p.*,
+								c.name_pages,
+								c.url_pages,
+								c.resume_pages,
+								c.content_pages,
+								c.published_pages,
+       							COALESCE(c.seo_title_pages, c.name_pages) as seo_title_pages,
+								COALESCE(c.seo_desc_pages, c.resume_pages) as seo_desc_pages,
+								lang.iso_lang,
+								lang.default_lang
 							FROM mc_about_page AS p
 							JOIN mc_about_page_content AS c ON(p.id_pages = c.id_pages) 
 							JOIN mc_lang AS lang ON(c.id_lang = lang.id_lang) 
 							$conditions";
 					break;
+				case 'parents':
+					$sql = "SELECT t.id_pages AS parent, GROUP_CONCAT(f.id_pages) AS children
+								FROM mc_about_page t
+								JOIN mc_about_page f ON t.id_pages=f.id_parent
+								GROUP BY t.id_pages";
+					break;
 				case 'child':
 					$config["conditions"] ? $conditions = $config["conditions"] : $conditions = '';
-					$sql = "SELECT p.id_pages,p.id_parent,p.img_pages,p.menu_pages, p.date_register, c.*,lang.iso_lang
+					$sql = "SELECT
+								p.id_pages,
+       							p.id_parent,
+       							p.img_pages,
+       							p.menu_pages,
+       							p.date_register, 
+      							c.name_pages,
+								c.url_pages,
+								c.resume_pages,
+								c.content_pages,
+								c.published_pages,
+       							COALESCE(c.seo_title_pages, c.name_pages) as seo_title_pages,
+								COALESCE(c.seo_desc_pages, c.resume_pages) as seo_desc_pages,
+    							lang.iso_lang
 							FROM mc_cms_page AS p
 							JOIN mc_about_page_content AS c USING ( id_pages )
 							JOIN mc_lang AS lang ON ( c.id_lang = lang.id_lang )
@@ -55,6 +83,10 @@ class frontend_db_about
 				case 'op':
 					$sql = "SELECT `day_abbr`,`open_day`,`noon_time`,`open_time`,`close_time`,`noon_start`,`noon_end` FROM `mc_about_op`";
 					break;
+				case 'op_content':
+					$sql = "SELECT * FROM `mc_about_op_content` 
+							JOIN mc_lang AS lang USING(id_lang)";
+					break;
 				case 'langs':
 					$sql = 'SELECT
 							h.id_pages,c.url_pages,c.id_lang,lang.iso_lang
@@ -71,11 +103,19 @@ class frontend_db_about
 			switch ($config['type']){
 				case 'page':
 					$sql = 'SELECT
-						h.*,c.*,lang.iso_lang
-						FROM mc_about_page AS h
-						JOIN mc_about_page_content AS c ON(h.id_pages = c.id_pages) 
-						JOIN mc_lang AS lang ON(c.id_lang = lang.id_lang) 
-						WHERE h.id_pages = :id AND lang.iso_lang = :iso AND c.published_pages = 1';
+								h.*,
+								c.name_pages,
+								c.url_pages,
+								c.resume_pages,
+								c.content_pages,
+								c.published_pages,
+       							COALESCE(c.seo_title_pages, c.name_pages) as seo_title_pages,
+								COALESCE(c.seo_desc_pages, c.resume_pages) as seo_desc_pages,
+								lang.iso_lang
+							FROM mc_about_page AS h
+							JOIN mc_about_page_content AS c ON(h.id_pages = c.id_pages) 
+							JOIN mc_lang AS lang ON(c.id_lang = lang.id_lang) 
+							WHERE h.id_pages = :id AND lang.iso_lang = :iso AND c.published_pages = 1';
 					break;
 			}
 

@@ -16,21 +16,20 @@ class backend_db_product{
 		if ($config['context'] === 'all') {
 			switch ($config['type']) {
 				case 'pages':
-					$sql = "SELECT p.id_product, c.name_p, p.reference_p, p.price_p, c.resume_p, c.content_p, p.date_register
-							FROM mc_catalog_product AS p
-								JOIN mc_catalog_product_content AS c USING ( id_product )
-								JOIN mc_lang AS lang ON ( c.id_lang = lang.id_lang )
-								WHERE c.id_lang = :default_lang
-								GROUP BY p.id_product 
-							ORDER BY p.id_product";
+					$cond = '';
+					$limit = '';
+					if($config['offset']) {
+						$limit = ' LIMIT 0, '.$config['offset'];
+						if(isset($config['page']) && $config['page'] > 1) {
+							$limit = ' LIMIT '.(($config['page'] - 1) * $config['offset']).', '.$config['offset'];
+						}
+					}
 
 					if (isset($config['search'])) {
-						$cond = '';
-						$config['search'] = array_filter($config['search']);
 						if (is_array($config['search']) && !empty($config['search'])) {
 							$nbc = 0;
 							foreach ($config['search'] as $key => $q) {
-								if ($q != '') {
+								if ($q !== '') {
 									$cond .= 'AND ';
 									$p = 'p'.$nbc;
 									switch ($key) {
@@ -38,10 +37,13 @@ class backend_db_product{
 											$cond .= 'p.'.$key.' = :'.$p.' ';
 											break;
 										case 'published_p':
-											$cond .= 'c.'.$key.' = :'.$p.' ';
+											$cond .= 'p.'.$key.' = :'.$p.' ';
 											break;
 										case 'name_p':
-											$cond .= "c.".$key." LIKE CONCAT('%', :".$p.", '%') ";
+											$cond .= "pc.".$key." LIKE CONCAT('%', :".$p.", '%') ";
+											break;
+										case 'name_cat':
+											$cond .= "cc.".$key." LIKE CONCAT('%', :".$p.", '%') ";
 											break;
 										case 'date_register':
 											$q = $dateFormat->date_to_db_format($q);
@@ -53,16 +55,30 @@ class backend_db_product{
 									$nbc++;
 								}
 							}
-
-							$sql = "SELECT p.id_product, c.name_p, p.reference_p, p.price_p ,c.content_p, p.date_register
-									FROM mc_catalog_product AS p
-										JOIN mc_catalog_product_content AS c USING ( id_product )
-										JOIN mc_lang AS lang ON ( c.id_lang = lang.id_lang )
-										WHERE c.id_lang = :default_lang $cond
-										GROUP BY p.id_product 
-									ORDER BY p.id_product";
 						}
 					}
+
+					$sql = "SELECT 
+								p.id_product, 
+								pc.name_p, 
+								cc.name_cat, 
+								p.reference_p,
+								p.price_p, 
+								pc.resume_p , 
+								pc.content_p,
+								pc.seo_title_p, 
+								pc.seo_desc_p,
+								IFNULL(pi.default_img,0) as img_p,
+								p.date_register
+							FROM mc_catalog_product AS p
+							JOIN mc_catalog_product_content AS pc USING ( id_product )
+							LEFT JOIN mc_catalog AS c ON ( p.id_product = c.id_product AND c.default_c = 1 )
+							LEFT JOIN mc_catalog_cat_content AS cc ON ( c.id_cat = cc.id_cat )
+							LEFT JOIN mc_catalog_product_img AS pi ON ( p.id_product = pi.id_product AND pi.default_img = 1 )
+							JOIN mc_lang AS lang ON ( pc.id_lang = lang.id_lang )
+							WHERE pc.id_lang = :default_lang $cond
+							GROUP BY p.id_product 
+							ORDER BY p.id_product DESC".$limit;
 					break;
 				case 'page':
 					$sql = 'SELECT p.*,c.*,lang.*
@@ -90,7 +106,7 @@ class backend_db_product{
 							WHERE rel.id_product = :id AND c.id_lang = :default_lang';
 					break;
 				case 'imgData':
-					$sql = 'SELECT img.id_img,img.id_product, img.name_img,c.id_lang,c.alt_img,c.title_img,lang.iso_lang
+					$sql = 'SELECT img.id_img,img.id_product, img.name_img,c.id_lang,c.alt_img,c.title_img,c.caption_img,lang.iso_lang
 							FROM mc_catalog_product_img AS img
 							LEFT JOIN mc_catalog_product_img_content AS c USING(id_img)
 							LEFT JOIN mc_lang AS lang ON(c.id_lang = lang.id_lang)
@@ -147,6 +163,9 @@ class backend_db_product{
 				case 'img':
 					$sql = 'SELECT * FROM mc_catalog_product_img WHERE `id_img` = :id';
 					break;
+				case 'lastImgId':
+					$sql = 'SELECT id_img FROM mc_catalog_product_img ORDER BY id_img DESC LIMIT 0,1';
+					break;
 				case 'imgDefault':
 					$sql = 'SELECT id_img FROM mc_catalog_product_img WHERE id_product = :id AND default_img = 1';
 					break;
@@ -200,20 +219,20 @@ class backend_db_product{
 						VALUES (:price_p,:reference_p,NOW())';
 				break;
 			case 'newContent':
-				$sql = 'INSERT INTO `mc_catalog_product_content`(id_product,id_lang,name_p,url_p,resume_p,content_p,published_p) 
-			  			VALUES (:id_product,:id_lang,:name_p,:url_p,:resume_p,:content_p,:published_p)';
+				$sql = 'INSERT INTO `mc_catalog_product_content`(id_product,id_lang,name_p,longname_p,url_p,resume_p,content_p,seo_title_p,seo_desc_p,published_p) 
+			  			VALUES (:id_product,:id_lang,:name_p,:longname_p,:url_p,:resume_p,:content_p,:seo_title_p,:seo_desc_p,:published_p)';
 				break;
 			case 'newImg':
 				$sql = 'INSERT INTO `mc_catalog_product_img`(id_product,name_img,order_img,default_img) 
 						SELECT :id_product,:name_img,COUNT(id_img),IF(COUNT(id_img) = 0,1,0) FROM mc_catalog_product_img WHERE id_product IN ('.$params['id_product'].')';
 				break;
 			case 'newImgContent':
-				$sql = 'INSERT INTO `mc_catalog_product_img_content`(id_img,id_lang,alt_img,title_img) 
-			  			VALUES (:id_img,:id_lang,:alt_img,:title_img)';
+				$sql = 'INSERT INTO `mc_catalog_product_img_content`(id_img,id_lang,alt_img,title_img,caption_img) 
+			  			VALUES (:id_img,:id_lang,:alt_img,:title_img,:caption_img)';
 				break;
 			case 'catRel':
 				$sql = 'INSERT INTO `mc_catalog` (id_product,id_cat,default_c,order_p)
-						SELECT :id,:id_cat,:default_c,COUNT(id_catalog) FROM mc_catalog WHERE id_cat IN ('.$params[':id_cat'].')';
+						SELECT :id,:id_cat,:default_c,COUNT(id_catalog) FROM mc_catalog WHERE id_cat IN ('.$params['id_cat'].')';
 				break;
 			case 'productRel':
 				$sql = 'INSERT INTO `mc_catalog_product_rel` (id_product,id_product_2)
@@ -252,16 +271,29 @@ class backend_db_product{
 				$sql = 'UPDATE mc_catalog_product_content 
 						SET 
 							name_p = :name_p,
+							longname_p = :longname_p,
 							url_p = :url_p,
 							resume_p = :resume_p,
 							content_p = :content_p,
+							seo_title_p = :seo_title_p, 
+                            seo_desc_p = :seo_desc_p,
 							published_p = :published_p
 							WHERE id_product = :id_product 
                 		AND id_lang = :id_lang';
 				break;
 			case 'imgContent':
-				$sql = 'UPDATE mc_catalog_product_img_content SET alt_img = :alt_img, title_img = :title_img
-                WHERE id_img = :id_img AND id_lang = :id_lang';
+				$sql = 'UPDATE mc_catalog_product_img_content 
+						SET 
+							alt_img = :alt_img, 
+							title_img = :title_img,
+							caption_img = :caption_img
+                		WHERE id_img = :id_img AND id_lang = :id_lang';
+				break;
+			case 'img':
+				$sql = 'UPDATE mc_catalog_product_img 
+						SET 
+							name_img = :name_img
+                		WHERE id_img = :id_img';
 				break;
 			case 'catRel':
 				$sql = 'UPDATE mc_catalog
@@ -326,7 +358,7 @@ class backend_db_product{
 				$sql = 'DELETE FROM mc_catalog WHERE id_product = :id';
 				break;
 			case 'oldCatRel':
-				$sql = 'DELETE FROM mc_catalog WHERE id_product = '.$params[':id'].' AND id_cat NOT IN ('.$params[':id_cat'].')';
+				$sql = 'DELETE FROM mc_catalog WHERE id_product = '.$params['id'].' AND id_cat NOT IN ('.$params['id_cat'].')';
 				$params = array();
 				break;
 			case 'productRel':

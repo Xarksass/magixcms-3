@@ -16,21 +16,28 @@ class backend_db_category
 		if ($config['context'] === 'all') {
 			switch ($config['type']) {
 				case 'pages':
-					$sql = "SELECT p.id_cat, c.name_cat, c.content_cat, p.menu_cat, p.date_register, p.img_cat
+					$limit = '';
+					if($config['offset']) {
+						$limit = ' LIMIT 0, '.$config['offset'];
+						if(isset($config['page']) && $config['page'] > 1) {
+							$limit = ' LIMIT '.(($config['page'] - 1) * $config['offset']).', '.$config['offset'];
+						}
+					}
+
+					$sql = "SELECT p.id_cat, c.name_cat, c.content_cat, c.seo_title_cat, c.seo_desc_cat, p.menu_cat, p.date_register, p.img_cat
 							FROM mc_catalog_cat AS p
 								JOIN mc_catalog_cat_content AS c USING ( id_cat )
 								JOIN mc_lang AS lang ON ( c.id_lang = lang.id_lang )
 								WHERE c.id_lang = :default_lang AND p.id_parent IS NULL 
 								GROUP BY p.id_cat 
-							ORDER BY p.order_cat";
+							ORDER BY p.order_cat".$limit;
 
 					if(isset($config['search'])) {
 						$cond = '';
-						$config['search'] = array_filter($config['search']);
 						if(is_array($config['search']) && !empty($config['search'])) {
 							$nbc = 0;
 							foreach ($config['search'] as $key => $q) {
-								if($q != '') {
+								if($q !== '') {
 									$cond .= 'AND ';
 									$p = 'p'.$nbc;
 									switch ($key) {
@@ -57,7 +64,7 @@ class backend_db_category
 								}
 							}
 
-							$sql = "SELECT p.id_cat, c.name_cat, c.content_cat, p.menu_cat, p.date_register, p.img_cat, ca.name_cat AS parent_cat
+							$sql = "SELECT p.id_cat, c.name_cat, c.content_cat, c.seo_title_cat, c.seo_desc_cat, p.menu_cat, p.date_register, p.img_cat, ca.name_cat AS parent_cat
 									FROM mc_catalog_cat AS p
 										JOIN mc_catalog_cat_content AS c USING ( id_cat )
 										JOIN mc_lang AS lang ON ( c.id_lang = lang.id_lang )
@@ -65,7 +72,7 @@ class backend_db_category
 										LEFT JOIN mc_catalog_cat_content AS ca ON ( pa.id_cat = ca.id_cat ) 
 										WHERE c.id_lang = :default_lang $cond
 										GROUP BY p.id_cat 
-									ORDER BY p.order_cat";
+									ORDER BY p.order_cat".$limit;
 						}
 					}
 					break;
@@ -74,7 +81,7 @@ class backend_db_category
 					if(isset($config['search']) && is_array($config['search']) && !empty($config['search'])) {
 						$nbc = 0;
 						foreach ($config['search'] as $key => $q) {
-							if($q != '') {
+							if($q !== '') {
 								$cond .= 'AND ';
 								$p = 'p'.$nbc;
 								switch ($key) {
@@ -101,7 +108,7 @@ class backend_db_category
 							JOIN mc_lang AS lang ON ( c.id_lang = lang.id_lang )
 							LEFT JOIN mc_catalog_cat AS pa ON ( p.id_parent = pa.id_cat )
 							LEFT JOIN mc_catalog_cat_content AS ca ON ( pa.id_cat = ca.id_cat ) 
-							WHERE p.id_parent = :id $cond
+							WHERE p.id_parent = :id AND c.id_lang = :default_lang $cond
 							GROUP BY p.id_cat 
 						ORDER BY p.order_cat";
 					break;
@@ -222,14 +229,14 @@ class backend_db_category
 		$sql = '';
 
 		switch ($config['type']) {
-			case 'newPages':
+			case 'page':
 				$cond = $params['id_parent'] != NULL ? 'IN ('.$params['id_parent'].')' : 'IS NULL' ;
-				$sql = "INSERT INTO `mc_catalog_cat`(id_parent,order_cat,date_register) 
-						SELECT :id_parent,COUNT(id_cat),NOW() FROM mc_catalog_cat WHERE id_parent $cond";
+				$sql = "INSERT INTO `mc_catalog_cat`(id_parent,menu_cat,order_cat,date_register) 
+						SELECT :id_parent,:menu_cat,COUNT(id_cat),NOW() FROM mc_catalog_cat WHERE id_parent $cond";
 				break;
-			case 'newContent':
-				$sql = 'INSERT INTO `mc_catalog_cat_content`(id_cat,id_lang,name_cat,url_cat,resume_cat,content_cat,published_cat) 
-				  		VALUES (:id_cat,:id_lang,:name_cat,:url_cat,:resume_cat,:content_cat,:published_cat)';
+			case 'content':
+				$sql = 'INSERT INTO `mc_catalog_cat_content`(id_cat,id_lang,name_cat,url_cat,resume_cat,content_cat,seo_title_cat,seo_desc_cat,published_cat) 
+				  		VALUES (:id_cat,:id_lang,:name_cat,:url_cat,:resume_cat,:content_cat,:seo_title_cat,:seo_desc_cat,:published_cat)';
 				break;
 		}
 
@@ -259,16 +266,34 @@ class backend_db_category
 			case 'page':
 				$sql = 'UPDATE mc_catalog_cat 
 						SET 
-							id_parent = :id_parent
+							id_parent = :id_parent,
+						    menu_cat = :menu_cat
 						WHERE id_cat = :id_cat';
 				break;
 			case 'content':
-				$sql = 'UPDATE mc_catalog_cat_content SET name_cat = :name_cat, url_cat = :url_cat, resume_cat = :resume_cat, content_cat=:content_cat, published_cat=:published_cat
+				$sql = 'UPDATE mc_catalog_cat_content 
+                        SET 
+                            name_cat = :name_cat, 
+                            url_cat = :url_cat, 
+                            resume_cat = :resume_cat, 
+                            content_cat=:content_cat, 
+                            seo_title_cat=:seo_title_cat, 
+                            seo_desc_cat=:seo_desc_cat, 
+                            published_cat=:published_cat
 						WHERE id_cat = :id_cat AND id_lang = :id_lang';
 				break;
 			case 'img':
 				$sql = 'UPDATE mc_catalog_cat SET img_cat = :img_cat
                 		WHERE id_cat = :id_cat';
+				break;
+			case 'imgContent':
+				$sql = 'UPDATE mc_catalog_cat_content 
+						SET 
+							alt_img = :alt_img,
+							title_img = :title_img,
+							caption_img = :caption_img
+                		WHERE id_cat = :id_cat 
+                		AND id_lang = :id_lang';
 				break;
 			case 'order':
 				$sql = 'UPDATE mc_catalog_cat SET order_cat = :order_cat

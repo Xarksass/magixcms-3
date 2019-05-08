@@ -17,21 +17,28 @@ class backend_db_pages
 		if ($config['context'] === 'all') {
 			switch ($config['type']) {
 				case 'pages':
-					$sql = "SELECT p.id_pages, c.name_pages, c.content_pages, c.seo_title_pages, c.seo_desc_pages, p.menu_pages, p.date_register
+					$limit = '';
+					if($config['offset']) {
+						$limit = ' LIMIT 0, '.$config['offset'];
+						if(isset($config['page']) && $config['page'] > 1) {
+							$limit = ' LIMIT '.(($config['page'] - 1) * $config['offset']).', '.$config['offset'];
+						}
+					}
+
+					$sql = "SELECT p.id_pages, c.name_pages, p.img_pages, c.content_pages, c.seo_title_pages, c.seo_desc_pages, p.menu_pages, p.date_register
 						FROM mc_cms_page AS p
 							JOIN mc_cms_page_content AS c USING ( id_pages )
 							JOIN mc_lang AS lang ON ( c.id_lang = lang.id_lang )
 							WHERE c.id_lang = :default_lang AND p.id_parent IS NULL 
 							GROUP BY p.id_pages 
-						ORDER BY p.order_pages";
+						ORDER BY p.order_pages".$limit;
 
 					if(isset($config['search'])) {
 						$cond = '';
-						$config['search'] = array_filter($config['search']);
 						if(is_array($config['search']) && !empty($config['search'])) {
 							$nbc = 1;
 							foreach ($config['search'] as $key => $q) {
-								if($q != '') {
+								if($q !== '') {
 									$cond .= 'AND ';
 									$p = 'p'.$nbc;
 									switch ($key) {
@@ -58,7 +65,7 @@ class backend_db_pages
 								}
 							}
 
-							$sql = "SELECT p.id_pages, c.name_pages, c.content_pages, c.seo_title_pages, c.seo_desc_pages, p.menu_pages, p.date_register, ca.name_pages AS parent_pages
+							$sql = "SELECT p.id_pages, c.name_pages, p.img_pages, c.content_pages, c.seo_title_pages, c.seo_desc_pages, p.menu_pages, p.date_register, ca.name_pages AS parent_pages
 								FROM mc_cms_page AS p
 									JOIN mc_cms_page_content AS c USING ( id_pages )
 									JOIN mc_lang AS lang ON ( c.id_lang = lang.id_lang )
@@ -66,7 +73,7 @@ class backend_db_pages
 									LEFT JOIN mc_cms_page_content AS ca ON ( pa.id_pages = ca.id_pages ) 
 									WHERE c.id_lang = :default_lang $cond
 									GROUP BY p.id_pages 
-								ORDER BY p.order_pages";
+								ORDER BY p.order_pages".$limit;
 						}
 					}
 					break;
@@ -75,7 +82,7 @@ class backend_db_pages
 					if(isset($config['search']) && is_array($config['search']) && !empty($config['search'])) {
 						$nbc = 0;
 						foreach ($config['search'] as $key => $q) {
-							if($q != '') {
+							if($q !== '') {
 								$cond .= 'AND ';
 								$p = 'p'.$nbc;
 								switch ($key) {
@@ -204,8 +211,8 @@ class backend_db_pages
 		switch ($config['type']) {
 			case 'page':
 				$cond = $params['id_parent'] != NULL ? ' IN ('.$params['id_parent'].')' : ' IS NULL';
-				$sql = "INSERT INTO `mc_cms_page`(id_parent,order_pages,date_register) 
-						SELECT :id_parent,COUNT(id_pages),NOW() FROM mc_cms_page WHERE id_parent".$cond;
+				$sql = "INSERT INTO `mc_cms_page`(id_parent,menu_pages,order_pages,date_register) 
+						SELECT :id_parent,:menu_pages,COUNT(id_pages),NOW() FROM mc_cms_page WHERE id_parent".$cond;
 				break;
 			case 'content':
 				$sql = 'INSERT INTO `mc_cms_page_content`(id_pages,id_lang,name_pages,url_pages,resume_pages,content_pages,seo_title_pages,seo_desc_pages,published_pages) 
@@ -239,7 +246,8 @@ class backend_db_pages
 			case 'page':
 				$sql = 'UPDATE mc_cms_page 
 							SET 
-								id_parent = :id_parent
+								id_parent = :id_parent,
+							    menu_pages = :menu_pages
 							WHERE id_pages = :id_pages';
 				break;
 			case 'content':
@@ -259,6 +267,15 @@ class backend_db_pages
 				$sql = 'UPDATE mc_cms_page 
 						SET img_pages = :img_pages
                 		WHERE id_pages = :id_pages';
+				break;
+			case 'imgContent':
+				$sql = 'UPDATE mc_cms_page_content 
+						SET 
+							alt_img = :alt_img,
+							title_img = :title_img,
+							caption_img = :caption_img
+                		WHERE id_pages = :id_pages 
+                		AND id_lang = :id_lang';
 				break;
 			case 'pageActiveMenu':
 				$sql = 'UPDATE mc_cms_page 

@@ -21,6 +21,15 @@ form {
 			}
 		}
 
+		.tr-placeholder {
+			background-color: #eee;
+			border-style: dashed;
+			min-height: 39px;
+		}
+		.ui-sortable-helper {
+			width: 100% !important;
+		}
+
 		.search-bar {
 			background-color: rgba(66,139,202,.2);
 			
@@ -73,6 +82,15 @@ form {
 			left: 30px;
 			height: 44px;
 			margin-top: -7px;
+		}
+
+		.sort-handle {
+			position: relative;
+			z-index: 2;
+
+			&:hover {
+				cursor: ns-resize;
+			}
 		}
 
 		.fixed-td {
@@ -147,6 +165,35 @@ form {
 					}
 				}
 			}
+		}
+	}
+}
+
+.filter_offset {
+	padding: 5px 5px 15px;
+	display: flex;
+	justify-content: center;
+
+	ul {
+		margin-bottom: 0;
+	}
+
+	li {
+		padding: 0;
+
+		a.btn {
+			padding: 0 10px;
+
+			&.active {
+				font-weight: bold;
+			}
+		}
+
+		&:nth-child(n+2) {
+			border-right: 1px solid #959595;
+		}
+		&:last-child {
+			border-right: none;
 		}
 	}
 }

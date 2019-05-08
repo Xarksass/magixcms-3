@@ -21,7 +21,7 @@ class backend_db_files
 						$nbc = 0;
 						$params = array();
 						foreach ($config['search'] as $key => $q) {
-							if ($q != '') {
+							if ($q !== '') {
 								$cond .= $nbc ? 'AND ' : 'WHERE ';
 								$p = 'p'.$nbc;
 								switch ($key) {
@@ -99,7 +99,7 @@ class backend_db_files
 		$sql = '';
 
 		switch ($config['type']) {
-			case '':
+			case 'resize':
 				$sql = 'UPDATE mc_config_img 
 						SET 
 							module_img = :module_img,

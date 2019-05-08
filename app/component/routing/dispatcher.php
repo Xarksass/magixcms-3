@@ -39,29 +39,7 @@ class component_routing_dispatcher{
      * global assign setting
      */
     private function getSetting(){
-        $data = $this->settingCollection->fetchData(array('context'=>'all','type'=>'setting'));
-        $arr = array();
-        if($data != null) {
-            foreach ($data as $item) {
-                $arr[$item['name']] = array();
-                $arr[$item['name']]['value'] = $item['value'];
-                $arr[$item['name']]['category'] = $item['category'];
-            }
-            $this->template->assign('setting', $arr);
-
-            /*if($arr['fav']['value'] !== '') {
-            	$faDir = $this->pathadmin.'template'.DIRECTORY_SEPARATOR.'fonts'.DIRECTORY_SEPARATOR.'fontawesome'.DIRECTORY_SEPARATOR.$arr['fav']['value'].DIRECTORY_SEPARATOR;
-            	if(!file_exists($faDir)){
-					$content = file_get_contents('https://maxcdn.bootstrapcdn.com/font-awesome/'.$arr['fav']['value'].'/fonts/fontawesome-webfont.ttf');
-
-					if ($content !== false) {
-						$makeFiles = new filesystem_makefile();
-						$makeFiles->mkdir($faDir);
-						file_put_contents($faDir.'fontawesome-webfont.ttf', $content);
-					}
-				}
-			}*/
-        }
+        $this->template->assign('setting', $this->settingCollection->getSetting());
     }
 
     /**
@@ -94,6 +72,9 @@ class component_routing_dispatcher{
 			$this->template->assign('domain',$this->template->domain);
 			$this->template->assign('dataLang',$this->template->langs);
 			$this->template->assign('defaultLang',$this->template->defaultLang);
+            $modelLogo = new frontend_model_logo($this->template);
+            $this->template->assign('logo', $modelLogo->getLogoData());
+            $this->template->assign('favicon', $modelLogo->getFaviconData());
 			$modelAbout = new frontend_model_about($this->template);
 			$this->template->assign('about', $modelAbout->getContentData());
 			$this->template->assign('companyData', $modelAbout->getCompanyData());
@@ -136,7 +117,7 @@ class component_routing_dispatcher{
 						$pluginsDir = component_core_system::basePath() . 'plugins' . DIRECTORY_SEPARATOR . $this->controller_name;
 
 						if($this->plugins === 'admin') {
-							$pluginActions = array('setup','upgrade','translate');
+							$pluginActions = array('setup','upgrade','translate','uninstall');
 							if(in_array($this->action,$pluginActions) && class_exists('backend_controller_plugins')) {
 								$pluginsController = new backend_controller_plugins();
 
@@ -150,7 +131,11 @@ class component_routing_dispatcher{
 									case 'translate':
 										$pluginsController->translate($this->controller_name);
 										break;
+									case 'uninstall':
+										$pluginsController->unregister($this->controller_name);
+										break;
 								}
+								return;
 							}
 						}
 
@@ -158,6 +143,7 @@ class component_routing_dispatcher{
 							$controller_class = $this->router . '_' . $this->controller_name . '_' . $this->plugins;
 						}
 						else {
+                            $this->preloadComponents($this->template->lang);
 							$this->getError(404);
 						}
 					}

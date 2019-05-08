@@ -4,9 +4,14 @@
 // Toggle menu button
 amp-sidebar {
 	background-color: #fff;
+	z-index: @z-drawer;
 	.shadow(16);
 
 	> div:last-child { display: none; }
+}
+
+[class*="amphtml-sidebar-mask"] {
+	z-index: 100;
 }
 
 .sidebar {
@@ -16,7 +21,6 @@ amp-sidebar {
 	display: flex;
 	flex-direction: column;
 	min-height: 100vh;
-	z-index: @z-drawer;
 
 	@media (min-width: @screen-xs-min) {
 		width: 50vw;
@@ -25,86 +29,117 @@ amp-sidebar {
 	> header {
 		display: flex;
 		justify-content: center;
-		padding: 15px;
-		background-color: @main-color;
-		color: #fff;
+		padding: 0 15px;
+		height: @headerH;
+		margin-bottom: 15px;
 	}
 
-	> li {
-		list-style: none;
-		margin-bottom:10px;
-	}
-}
+	footer {
+		.followbox {
+			display: flex;
+			flex-flow: column;
+			align-items: center;
+			justify-content: center;
 
-.close-sidebar {
-	position: absolute;
-	left: 0;
-	top: -1px;
-	padding: 15px;
+			ul {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: center;
+			}
+
+			li a {
+				width: 35px;
+				height: 35px;
+				font-size: 16px;
+			}
+
+			.share-buttons(coloronly,coloronly,#222);
+		}
+	}
 }
 
 .menu {
 	flex: 1 0 auto;
+	margin: 0;
 
 	a {
 		display: block;
-		padding: 15px;
+		padding: 12px 15px;
 		background-color: transparent;
-		color: @text-color;
-		border-bottom: 1px solid #dfdfdf;
-
-		&:focus, &:active {
-			color: @main-color;
-		}
 	}
 
-	amp-accordion {
-		> section {
-			header {
-				background-color: transparent;
-				border: none;
-				padding: 0;
-
-				.material-icons {
-					padding: 15px;
-					display: block;
-					position: absolute;
-					right: 0;
-					top: 0;
-				}
-			}
-
-			&:not([expanded]) {
-				> header > .show-less {
-					display: none;
-				}
-			}
-
-			&[expanded] {
-				> header > .show-more {
-					display: none;
-				}
-			}
-		}
+	a, a:visited {
+		color: @menu-color;
 	}
 
-	.nested-accordion {
-		padding: 0 0 0 15px;
-		background: #eee;
+	a:focus {
+		text-decoration: none;
+		color: @menu-hover-color;
+		background: @menu-hover-bg;
+	}
 
-		> section,
-		> .section {
-			background: #fff;
+	section {
+		position: relative;
 
-			> div {
-				padding: 0 0 0 15px;
-				background: #eee;
-				border-left: 1px solid rgba(0,0,0,.1);
+		header {
+			background-color: transparent;
+			border: none;
+			padding: 0;
+
+			.material-icons {
+				padding: 10px 15px;
+				display: block;
+				position: absolute;
+				right: 0;
+				top: 0;
 			}
 		}
 
-		ul {
-			background: #fff;
+		.show-more > i {
+			.auto-transition(.2s);
+			transform: scale(1,1);
+		}
+
+		/*&:not([expanded]) {
+			.show-more > i {
+				transform: scale(1,1);
+			}
+		}*/
+
+		&[expanded] {
+			> header .show-more > i {
+				transform: scale(1,0);
+			}
+		}
+
+		&.active header a {
+			color: @menu-active-color;
+		}
+
+		section {
+			.material-icons {
+				padding: 4px 15px;
+			}
+
+			a {
+				padding: 7px 15px 7px 25px;
+				font-size: .89rem;
+			}
+
+			a, a:visited {
+				color: @submenu-color;
+			}
+
+			a:focus {
+				color: @submenu-hover-color;
+				background: @submenu-hover-bg;
+			}
+
+			a:active,
+			&.active a {
+				color: @submenu-active-color;
+				background: @submenu-active-bg;
+			}
 		}
 	}
 }

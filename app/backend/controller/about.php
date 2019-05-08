@@ -4,7 +4,7 @@ class backend_controller_about extends backend_db_about{
     public $edit, $action, $tabs, $search;
 
     protected $message, $template, $header, $data, $modelLanguage, $collectionLanguage, $country, $language, $languages, $id_pages ,$parent_id, $order;
-    public $content, $dataType, $enable_op, $send = array('openinghours' => ''),$ajax,$tableaction,$tableform;
+    public $content, $dataType, $enable_op, $send = array('openinghours' => ''),$ajax,$tableaction,$tableform,$menu_pages;
 	public $tableconfig = array(
 		'all' => array(
 			'id_pages',
@@ -37,9 +37,13 @@ class backend_controller_about extends backend_db_about{
             'schema' => 'Organization',
             'label' => 'Organisation'
         ),
-        'corp' 		=> array(
+        'locb' 		=> array(
             'schema' => 'LocalBusiness',
             'label' => 'Entreprise locale'
+        ),
+        'corp' 		=> array(
+            'schema' => 'Corporation',
+            'label' => 'Société'
         ),
         'store' 	=> array(
             'schema' => 'Store',
@@ -185,7 +189,10 @@ class backend_controller_about extends backend_db_about{
 		}
 
 		// --- Search
-		if (http_request::isGet('search')) $this->search = $formClean->arrayClean($_GET['search']);
+		if (http_request::isGet('search')) {
+			$this->search = $formClean->arrayClean($_GET['search']);
+			$this->search = array_filter($this->search, function ($value) { return $value !== ''; });
+		}
 
         /* Global about edition */
         if (http_request::isPost('data_type')) $this->dataType = $formClean->simpleClean($_POST['data_type']);
@@ -213,6 +220,7 @@ class backend_controller_about extends backend_db_about{
 		// --- ADD or EDIT
 		if (http_request::isPost('id')) $this->id_pages = $formClean->simpleClean($_POST['id']);
 		if (http_request::isPost('parent_id')) $this->parent_id = $formClean->simpleClean($_POST['parent_id']);
+		if (http_request::isPost('menu_pages')) $this->menu_pages = $formClean->simpleClean($_POST['menu_pages']);
 
         if (http_request::isPost('content')) {
             $array = $_POST['content'];
@@ -234,17 +242,19 @@ class backend_controller_about extends backend_db_about{
         if (http_request::isPost('openinghours')) $this->send['openinghours'] = $formClean->arrayClean($_POST['openinghours']);
     }
 
-    /**
-     * Assign data to the defined variable or return the data
+	/**
+	 * Assign data to the defined variable or return the data
 	 * @param string $type
 	 * @param string|int|null $id
-     * @param string $context
+	 * @param string $context
 	 * @param boolean $assign
-     * @return mixed
-     */
-    private function getItems($type, $id = null, $context = null, $assign = true) {
-        return $this->data->getItems($type, $id, $context, $assign);
-    }
+	 * @param boolean $pagination
+	 * @return mixed
+	 * @throws Exception
+	 */
+	private function getItems($type, $id = null, $context = null, $assign = true, $pagination = false) {
+		return $this->data->getItems($type, $id, $context, $assign, $pagination);
+	}
 
 	/**
 	 * @param $ajax
@@ -261,13 +271,14 @@ class backend_controller_about extends backend_db_about{
 			$results = $this->getItems('pagesChild',$this->edit,'all',false);
 		}
 		else {
-			$results = $this->getItems('pages',array('default_lang'=>$defaultLanguage['id_lang']),'all',false);
+			$results = $this->getItems('pages',array('default_lang'=>$defaultLanguage['id_lang']),'all',false,true);
 		}
 
 		$assign = $this->tableconfig[(($ajax || $this->edit) ? 'parent' : 'all')];
 
 		if($ajax) {
 			$params['section'] = 'pages';
+			$params['tab'] = 'pages';
 			$params['idcolumn'] = 'id_pages';
 			$params['activation'] = true;
 			$params['sortable'] = true;
@@ -326,6 +337,7 @@ class backend_controller_about extends backend_db_about{
 		switch ($data['type']) {
 			case 'page':
 			case 'content':
+			case 'close_txt':
 				parent::insert(
 					array(
 						'context' => $data['context'],
@@ -353,6 +365,7 @@ class backend_controller_about extends backend_db_about{
 			case 'socials':
 			case 'openinghours':
 			case 'pageActiveMenu':
+			case 'close_txt':
 				parent::update(
 					array(
 						'context' => $data['context'],
@@ -464,7 +477,8 @@ class backend_controller_about extends backend_db_about{
 						'type' => 'page',
 						'data' => array(
 							'id_pages' => $idpage,
-							'id_parent' => empty($this->parent_id) ? NULL : $this->parent_id
+							'id_parent' => empty($this->parent_id) ? NULL : $this->parent_id,
+							'menu_pages' => isset($this->menu_pages) ? 1 : 0
 						)
 					)
 				);
@@ -507,20 +521,55 @@ class backend_controller_about extends backend_db_about{
 		/* Update openinghours */
 		foreach ($this->company['specifications'] as $day => $opt) {
 			if(isset($this->send['openinghours'][$day])) {
-				$this->company['specifications'][$day]['open_day'] = '1';
+				$this->company['specifications'][$day]['open_day'] = (isset($this->send['openinghours'][$day]['open_day']) ? '1' : '0');
 
-				if(isset($this->send['openinghours'][$day]['noon_time'])) {
-					$this->company['specifications'][$day]['noon_time'] = '1';
+				if(isset($this->send['openinghours'][$day]['open_day'])) {
+					if(isset($this->send['openinghours'][$day]['noon_time'])) {
+						$this->company['specifications'][$day]['noon_time'] = '1';
 
-					$this->company['specifications'][$day]['noon_start'] 	= ($this->send['openinghours'][$day]['noon_start']['hh'] ? ($this->send['openinghours'][$day]['noon_start']['hh'].':'.$this->send['openinghours'][$day]['noon_start']['mm']) : null);
-					$this->company['specifications'][$day]['noon_end'] 	= ($this->send['openinghours'][$day]['noon_end']['hh'] ? ($this->send['openinghours'][$day]['noon_end']['hh'].':'.$this->send['openinghours'][$day]['noon_end']['mm']) : null);
-				} else {
-					$this->company['specifications'][$day]['noon_time'] = '0';
+						$this->company['specifications'][$day]['noon_start'] = ($this->send['openinghours'][$day]['noon_start']['hh'] ? ($this->send['openinghours'][$day]['noon_start']['hh'].':'.$this->send['openinghours'][$day]['noon_start']['mm']) : null);
+						$this->company['specifications'][$day]['noon_end'] = ($this->send['openinghours'][$day]['noon_end']['hh'] ? ($this->send['openinghours'][$day]['noon_end']['hh'].':'.$this->send['openinghours'][$day]['noon_end']['mm']) : null);
+					} else {
+						$this->company['specifications'][$day]['noon_time'] = '0';
+					}
+
+					$this->company['specifications'][$day]['open_time'] = ($this->send['openinghours'][$day]['open']['hh'] ? ($this->send['openinghours'][$day]['open']['hh'].':'.$this->send['openinghours'][$day]['open']['mm']) : null);
+					$this->company['specifications'][$day]['close_time'] = ($this->send['openinghours'][$day]['close']['hh'] ? ($this->send['openinghours'][$day]['close']['hh'].':'.$this->send['openinghours'][$day]['close']['mm']) : null);
 				}
+				else {
+					foreach ($this->send['openinghours'][$day]['content'] as $lang => $content) {
+						$contentPage = $this->getItems('close_txt',array('id_lang'=>$lang),'one',false);
 
-				$this->company['specifications'][$day]['open_time'] 	= ($this->send['openinghours'][$day]['open']['hh'] ? ($this->send['openinghours'][$day]['open']['hh'].':'.$this->send['openinghours'][$day]['open']['mm']) : null);
-				$this->company['specifications'][$day]['close_time'] 	= ($this->send['openinghours'][$day]['close']['hh'] ? ($this->send['openinghours'][$day]['close']['hh'].':'.$this->send['openinghours'][$day]['close']['mm']) : null);
-			} else {
+						if($contentPage != null) {
+							$this->upd(
+								array(
+									'context' => 'about',
+									'type' => 'close_txt',
+									'data' => array(
+										'id' => $contentPage['id_content'],
+										'column' => 'text_'.$day,
+										'value' => $this->send['openinghours'][$day]['content'][$lang]['txt']
+									)
+								)
+							);
+						}
+						else {
+							$this->add(
+								array(
+									'context' => 'about',
+									'type' => 'close_txt',
+									'data' => array(
+										'id_lang' => $lang,
+										'column' => 'text_'.$day,
+										'value' => $this->send['openinghours'][$day]['content'][$lang]['txt']
+									)
+								)
+							);
+						}
+					}
+				}
+			}
+			else {
 				$this->company['specifications'][$day]['open_day'] = '0';
 			}
 		}
@@ -570,14 +619,21 @@ class backend_controller_about extends backend_db_about{
 					$this->company[$info] = $about['openinghours'];
 
 					$op = parent::fetchData(array('context'=>'all','type'=>'op'));
-					foreach ($op as $d) {
-						$schedule[$d['day_abbr']] = $d;
-						array_shift($schedule[$d['day_abbr']]);
+					$op_content = parent::fetchData(array('context'=>'all','type'=>'op_content'));
 
-						$schedule[$d['day_abbr']]['open_time'] = explode(':',$d['open_time']);
-						$schedule[$d['day_abbr']]['close_time'] = explode(':',$d['close_time']);
-						$schedule[$d['day_abbr']]['noon_start'] = explode(':',$d['noon_start']);
-						$schedule[$d['day_abbr']]['noon_end'] = explode(':',$d['noon_end']);
+					foreach ($op as $d) {
+						$abbr = $d['day_abbr'];
+						$schedule[$abbr] = $d;
+						array_shift($schedule[$abbr]);
+
+						foreach ($op_content as $opc) {
+							$schedule[$abbr]['close_txt'][$opc['id_lang']] = $opc['text_'.strtolower($abbr)];
+						}
+
+						$schedule[$abbr]['open_time'] = explode(':',$d['open_time']);
+						$schedule[$abbr]['close_time'] = explode(':',$d['close_time']);
+						$schedule[$abbr]['noon_start'] = explode(':',$d['noon_start']);
+						$schedule[$abbr]['noon_end'] = explode(':',$d['noon_end']);
 					}
 					break;
 				default:
@@ -634,7 +690,8 @@ class backend_controller_about extends backend_db_about{
 								'context' => 'page',
 								'type' => 'page',
 								'data' => array(
-									'id_parent' => empty($this->parent_id) ? NULL : $this->parent_id
+									'id_parent' => empty($this->parent_id) ? NULL : $this->parent_id,
+									'menu_pages' => isset($this->menu_pages) ? 1 : 0
 								)
 							)
 						);
@@ -772,7 +829,7 @@ class backend_controller_about extends backend_db_about{
 			$this->modelLanguage->getLanguage();
 			$defaultLanguage = $this->collectionLanguage->fetchData(array('context'=>'one','type'=>'default'));
 
-			$this->getItems('pages',array('default_lang'=>$defaultLanguage['id_lang']),'all');
+			$this->getItems('pages',array('default_lang'=>$defaultLanguage['id_lang']),'all',true,true);
 			$this->data->getScheme(
 				array('mc_about_page','mc_about_page_content'),
 				array('id_pages','name_pages','resume_pages','content_pages','seo_title_pages','seo_desc_pages','menu_pages','date_register'),

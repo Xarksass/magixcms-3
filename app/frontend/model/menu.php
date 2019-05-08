@@ -36,7 +36,7 @@ class frontend_model_menu extends frontend_db_menu {
 
 	protected $template, $data, $routingUrl, $modelPlugins, $language, $languages, $collectionLanguage, $modelSystem;
 
-	public $about, $pages, $catalog, $category, $plugin;
+	public $about, $pages, $catalog, $category, $plugin, $controller, $id, $id_parent;
 
 	/**
 	 * frontend_model_menu constructor.
@@ -50,6 +50,17 @@ class frontend_model_menu extends frontend_db_menu {
 		$this->data = new frontend_model_data($this,$this->template);
 		$this->collectionLanguage = new component_collections_language();
 		$this->modelSystem = new frontend_model_core();
+		$formClean = new form_inputEscape();
+
+		if (http_request::isGet('controller')) {
+			$this->controller = $formClean->simpleClean($_GET['controller']);
+		}
+		if (http_request::isGet('id')) {
+			$this->id = $formClean->numeric($_GET['id']);
+		}
+		if (http_request::isGet('id_parent')) {
+			$this->id_parent = $formClean->numeric($_GET['id_parent']);
+		}
 	}
 
 	/**
@@ -77,17 +88,30 @@ class frontend_model_menu extends frontend_db_menu {
 	}
 
 	/**
+	 * @param $params
+	 * @return bool
+	 */
+	public function getPluginMenuConf($params)
+	{
+		$plugin = $this->getItems('plugin',array('id' => $params['id']),'one',false);
+		$plugin_class = 'plugins_'.$plugin['name'].'_public';
+		$plugin = new $plugin_class($this->template);
+		return (method_exists($plugin,'is_amp')) ? $plugin->is_amp() : false;
+	}
+
+	/**
 	 * @param $iso
 	 * @return array
 	 */
 	public function setLinksData($iso) {
 		$current = $this->modelSystem->setCurrentId();
 		$links = $this->getItems('links',array('iso' => $iso),'all',false);
+		$active = array('controller' => $this->controller, 'ids' => array());
 
 		foreach ($links as &$link) {
 			switch ($link['type_link']) {
 				case 'pages':
-					$link['url_link']  =
+					$link['url_link'] =
 						$this->routingUrl->getBuildUrl(array(
 								'type' => 'pages',
 								'iso'  => $link['iso_lang'],
@@ -97,7 +121,8 @@ class frontend_model_menu extends frontend_db_menu {
 						);
 					break;
 				case 'about_page':
-					$link['url_link']  =
+					$link['controller'] = 'about';
+					$link['url_link'] =
 						$this->routingUrl->getBuildUrl(array(
 								'type' => 'about',
 								'iso'  => $link['iso_lang'],
@@ -107,7 +132,8 @@ class frontend_model_menu extends frontend_db_menu {
 						);
 					break;
 				case 'category':
-					$link['url_link']  =
+					$link['controller'] = 'catalog';
+					$link['url_link'] =
 						$this->routingUrl->getBuildUrl(array(
 								'type' => 'category',
 								'iso'  => $link['iso_lang'],
@@ -116,13 +142,15 @@ class frontend_model_menu extends frontend_db_menu {
 							)
 						);
 					break;
-			}
-
-			switch ($link['type_link']) {
-				case 'about_page': $link['controller'] = 'about'; break;
-				case 'category': $link['controller'] = 'catalog'; break;
 				case 'plugin': $link['controller'] = $link['plugin_name']; break;
 				default: $link['controller'] = $link['type_link'];
+			}
+
+			if(in_array($link['type_link'],array('home','pages','about','about_page','catalog','category','news'))) {
+				$link['amp_available'] = true;
+			}
+			elseif($link['type_link'] === 'plugin') {
+				$link['amp_available'] = $this->getPluginMenuConf(array('id' => $link['id_page']));
 			}
 
 			if($link['mode_link'] !== 'simple') {
@@ -191,6 +219,22 @@ class frontend_model_menu extends frontend_db_menu {
 			}
 		}
 
+		switch ($this->controller) {
+			case 'about':
+				if(!$this->about) $this->about = new frontend_model_about($this->template);
+				if($this->id || $this->id_parent) $active['ids'] = $this->about->getParents($this->id_parent ? $this->id_parent : $this->id);
+				break;
+			case 'pages':
+				if(!$this->pages) $this->pages = new frontend_model_pages($this->template);
+				if($this->id || $this->id_parent) $active['ids'] = $this->pages->getParents($this->id_parent ? $this->id_parent : $this->id);
+				break;
+			case 'catalog':
+				if(!$this->catalog) $this->catalog = new frontend_model_catalog($this->template);
+				if($this->id || $this->id_parent) $active['ids'] = $this->catalog->getParents($this->id_parent ? $this->id_parent : $this->id);
+				break;
+		}
+
+		$this->template->assign('active_link',$active);
 		$this->template->assign('links',$links);
 	}
 }

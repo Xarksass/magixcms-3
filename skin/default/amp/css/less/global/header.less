@@ -4,44 +4,85 @@
 // --- Main header
 .header {
 	position: fixed;
-	z-index: @z-fixed;
+	z-index: 500;
 	width: 100%;
 	//max-width: 37.5rem;
 	left: 0;
 	background-color: @white;
 	//border-bottom: 1px solid #cccccc;
-	.shadow(4);
+	//-webkit-box-shadow: 0 0 15px 0 rgba(0,0,0,.2), 0 5px 20px 0 rgba(0,0,0,.1);
+	box-shadow: 0 0 15px 0 rgba(0,0,0,.2), 0 5px 20px 0 rgba(0,0,0,.1);
 }
 
 .header-inner {
-	height: 50px;
 	display: flex;
+	height: 50px;
 	padding: 10px;
 	align-items: center;
+	justify-content: center;
 }
 
 .site-name {
-	flex: 1;
-	text-align: center;
+	//flex: 1;
+	//text-align: center;
+	a { display: block; }
+	amp-img { vertical-align: middle; }
+}
 
-	amp-img {
-		vertical-align: middle;
+.hamburger, .select-lang { position: absolute; }
+
+.hamburger {
+	left: 20px;
+
+	.icon-bar:nth-child(n+2) {
+		margin-top: 4px;
+	}
+
+	> .icon-bar:nth-last-child(n+1) {
+		display: block;
+		width: 22px;
+		height: 2px;
+		border-radius: 1px;
+		background-color: @text-color;
+		.auto-transition(.2s);
+		.transform-origin(left center);
+	}
+
+	&.open {
+		.icon-bar {
+			width: 21px;
+
+			&:nth-child(1) {
+				-webkit-transform: rotate(45deg) translate(-1px,-1px);
+				-ms-transform: rotate(45deg) translate(-1px,-1px); // IE9 only
+				//-o-transform: rotate(45deg) translate(-1px,-1px);
+				transform: rotate(45deg) translate(-1px,-1px);
+			}
+			&:nth-child(2) {
+				.opacity(0);
+			}
+			&:nth-child(3) {
+				-webkit-transform: rotate(-45deg) translate(-1px,1px);
+				-ms-transform: rotate(-45deg) translate(-1px,1px); // IE9 only
+				//-o-transform: rotate(-45deg) translate(-1px,1px);
+				transform: rotate(-45deg) translate(-1px,1px);
+			}
+		}
 	}
 }
 
-.hamburger {
-	position: absolute;
-	left: 20px;
-}
-
 .select-lang {
-	position: absolute;
 	top: 8px;
 	right: 10px;
 
 	button {
 		border: none;
-		padding: 15px;
+		padding: 15px 10px;
+	}
+
+	.dropdown a {
+		font-size: .875rem;
+		color: @text-color;
 	}
 }
 
@@ -50,10 +91,10 @@
 //
 amp-user-notification {
 	min-height: 30px;
-	font-family: 'Roboto';
+	//font-family: 'Roboto';
 	font-weight: 500;
-	line-height: 30px;
-	color: #f2f2f2;
+	//line-height: 30px;
+	color: @white;
 	padding: 15px;
 	background-color: rgba(0,0,0,.6);
 

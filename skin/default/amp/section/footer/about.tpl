@@ -11,9 +11,15 @@
             <meta itemprop="hasMap" content="{$url}/{$lang}/gmap/"/>
         {/if}
         <div itemprop="logo image" itemscope itemtype="https://schema.org/ImageObject">
-            <meta itemprop="url" content="{$url}/skin/{$theme}/img/logo/{#logo_img#}">
-            <meta itemprop="width" content="269">
-            <meta itemprop="height" content="50">
+            {if $logo && $logo.img.active eq 1}
+                <meta itemprop="url" content="{$url}{$logo.img.medium.src}">
+                <meta itemprop="width" content="{$url}{$logo.img.medium.w}">
+                <meta itemprop="height" content="{$url}{$logo.img.medium.h}">
+            {else}
+                <meta itemprop="url" content="{$url}/skin/{$theme}/img/logo/{#logo_img_mail#}">
+                <meta itemprop="width" content="229">
+                <meta itemprop="height" content="50">
+            {/if}
         </div>
         {if $companyData.contact.phone}
             <meta itemprop="telephone" content="{$companyData.contact.phone}"/>
@@ -42,6 +48,42 @@
                 <meta itemprop="postalCode" content="{$companyData.contact.adress.postcode}"/>
                 <meta itemprop="addressLocality" content="{$companyData.contact.adress.city}"/>
             </div>
+        {/if}
+        {if $companyData.openinghours && $companyData.type === "LocalBusiness"}
+            {$open_days = array()}
+            {$open = ''}
+            {$close = ''}
+            {foreach $companyData.specifications as $day => $specific}
+                {if $specific.open_day}
+                    {$open_days[] = $day}
+
+                    {if $open == '' || $specific.open_time < $open}
+                        {$open = $specific.open_time}
+                    {/if}
+
+                    {if $close == '' || $specific.close_time > $close}
+                        {$close = $specific.close_time}
+                    {/if}
+                {/if}
+            {/foreach}
+            {$open_days = ','|implode:$open_days}
+            <meta itemprop="openingHours" content="{$open_days} {$open}-{$close}">
+            {foreach $companyData.specifications as $day => $specific}
+                {if $specific.open_day}
+                    <div itemprop="openingHoursSpecification" itemscope itemtype="http://schema.org/OpeningHoursSpecification">
+                        <meta itemprop="dayOfWeek" content="{$day}" />
+                        {if $specific.noon_time}
+                            <meta itemprop="opens" content="{$specific.open_time}" />
+                            <meta itemprop="closes" content="{$specific.noon_start}" />
+                            <meta itemprop="opens" content="{$specific.noon_end}" />
+                            <meta itemprop="closes" content="{$specific.close_time}" />
+                        {else}
+                            <meta itemprop="opens" content="{$specific.open_time}" />
+                            <meta itemprop="closes" content="{$specific.close_time}" />
+                        {/if}
+                    </div>
+                {/if}
+            {/foreach}
         {/if}
         <div id="contactPoint" itemprop="contactPoint" itemscope itemtype="http://schema.org/ContactPoint">
             {if $companyData.contact.mail}

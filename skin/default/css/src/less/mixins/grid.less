@@ -10,9 +10,9 @@
 .container {
 	.container-fixed();
 
-	@media (min-width: @screen-sm-min) {
+	/*@media (min-width: @screen-sm-min) {
 		max-width: @container-sm;
-	}
+	}*/
 	@media (min-width: @screen-md-min) {
 		max-width: @container-md;
 	}
@@ -58,6 +58,7 @@
 	-ms-flex-positive: 1;
 	flex-grow: 1;
 	max-width: 100%;
+	padding: 0 15px;
 }
 
 .make-grid-columns();

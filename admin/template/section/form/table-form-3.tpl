@@ -24,6 +24,21 @@
         {$sch.input|var_dump}
     {/foreach}{/if}
     {if $debug}{$data|var_dump}{/if}
+    {if $change_offset && !isset($smarty.get.search)}
+        {$request = $smarty.server.REQUEST_URI}
+        {$offset = strpos($request,'&offset=')}
+        {if $offset}
+            {$request = substr($request,0,$offset)}
+        {/if}
+        <div class="filter_offset">
+            <ul class="list-inline">
+                <li>{#display_step#}&nbsp;:</li>
+                <li><a href="{$url}{$request}&offset=25" class="btn btn-link{if !isset($smarty.get.offset) || $smarty.get.offset == 25} active{/if}">25</a></li>
+                <li><a href="{$url}{$request}&offset=50" class="btn btn-link{if $smarty.get.offset == 50} active{/if}">50</a></li>
+                <li><a href="{$url}{$request}&offset=100" class="btn btn-link{if $smarty.get.offset == 100} active{/if}">100</a></li>
+            </ul>
+        </div>
+    {/if}
     <div class="table-responsive{if (empty($data) || !count($data)) && !$smarty.get.search} hide{/if}" id="table-{if $subcontroller}{$subcontroller}{else}{$controller}{/if}">
         <form action="/{baseadmin}/index.php" method="get"{if $ajax_form} class="validate_form search_form"{/if}>
             <input type="hidden" name="controller" value="{$smarty.get.controller}" />
@@ -32,7 +47,8 @@
             <table class="table table-striped table-hover">
                 <thead>
                 <tr>
-                    <th class="fixed-td-sm">&nbsp;</th>
+                    <th class="fixed-td-sm"><span class="sr-only">{#select#}</span></th>
+                    {if $sortable}<th><span class="sr-only">{#sort#}</span></th>{/if}
                     {foreach $scheme as $name => $col}
                         <th{if $col.class && !empty($col.class)} class="{$col.class}"{/if}>{if $debug}{$col['title']} | {/if}{#$col['title']#|ucfirst}</th>
                     {/foreach}
@@ -49,6 +65,7 @@
                             </label>
                         </div>
                     </th>
+                    {if $sortable}<th>&nbsp;</th>{/if}
                     {foreach $scheme as $name => $col}
                     <th>
                         <div class="form-group">

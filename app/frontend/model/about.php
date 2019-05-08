@@ -44,9 +44,13 @@ class frontend_model_about extends frontend_db_about {
 			'schema' => 'Organization',
 			'label' => 'Organisation'
 		),
-		'corp' 		=> array(
+		'locb' 		=> array(
 			'schema' => 'LocalBusiness',
 			'label' => 'Entreprise locale'
+		),
+		'corp' 		=> array(
+			'schema' => 'Corporation',
+			'label' => 'Société'
 		),
 		'store' 	=> array(
 			'schema' => 'Store',
@@ -111,7 +115,8 @@ class frontend_model_about extends frontend_db_about {
 				'close_time' 	=> NULL,
 				'noon_time' 	=> '0',
 				'noon_start' 	=> NULL,
-				'noon_end' 		=> NULL
+				'noon_end' 		=> NULL,
+				'close_txt'		=> NULL
 			),
 			'Tu' => array(
 				'open_day' 		=> '0',
@@ -119,7 +124,8 @@ class frontend_model_about extends frontend_db_about {
 				'close_time'	=> NULL,
 				'noon_time' 	=> '0',
 				'noon_start'	=> NULL,
-				'noon_end'		=> NULL
+				'noon_end'		=> NULL,
+				'close_txt'		=> NULL
 			),
 			'We' => array(
 				'open_day' 		=> '0',
@@ -127,7 +133,8 @@ class frontend_model_about extends frontend_db_about {
 				'close_time' 	=> NULL,
 				'noon_time' 	=> '0',
 				'noon_start' 	=> NULL,
-				'noon_end' 		=> NULL
+				'noon_end' 		=> NULL,
+				'close_txt'		=> NULL
 			),
 			'Th' => array(
 				'open_day' 		=> '0',
@@ -135,7 +142,8 @@ class frontend_model_about extends frontend_db_about {
 				'close_time' 	=> NULL,
 				'noon_time' 	=> '0',
 				'noon_start' 	=> NULL,
-				'noon_end' 		=> NULL
+				'noon_end' 		=> NULL,
+				'close_txt'		=> NULL
 			),
 			'Fr' => array(
 				'open_day' 		=> '0',
@@ -143,7 +151,8 @@ class frontend_model_about extends frontend_db_about {
 				'close_time' 	=> NULL,
 				'noon_time' 	=> '0',
 				'noon_start' 	=> NULL,
-				'noon_end'		=> NULL
+				'noon_end'		=> NULL,
+				'close_txt'		=> NULL
 			),
 			'Sa' => array(
 				'open_day' 		=> '0',
@@ -151,7 +160,8 @@ class frontend_model_about extends frontend_db_about {
 				'close_time' 	=> NULL,
 				'noon_time' 	=> '0',
 				'noon_start' 	=> NULL,
-				'noon_end' 		=> NULL
+				'noon_end' 		=> NULL,
+				'close_txt'		=> NULL
 			),
 			'Su' => array(
 				'open_day' 		=> '0',
@@ -159,10 +169,13 @@ class frontend_model_about extends frontend_db_about {
 				'close_time' 	=> NULL,
 				'noon_time' 	=> '0',
 				'noon_start' 	=> NULL,
-				'noon_end' 		=> NULL
+				'noon_end' 		=> NULL,
+				'close_txt'		=> NULL
 			)
 		)
 	);
+
+	public $amp = false;
 
 	/**
 	 * frontend_model_about constructor.
@@ -176,6 +189,7 @@ class frontend_model_about extends frontend_db_about {
 		$this->data = new frontend_model_data($this,$this->template);
 		$this->language = new frontend_controller_language($this->template);
 		$this->languages = $this->language->setCollection();
+		$this->amp = http_request::isGet('amp') ? true : false;
 
 		$detect = new Mobile_Detect;
 		$this->touch = false;
@@ -214,19 +228,20 @@ class frontend_model_about extends frontend_db_about {
 	 */
 	public function setItemData($row,$current,$newRow = false)
 	{
+		$string_format = new component_format_string();
 		$data = null;
 
 		if ($row != null) {
 			if (isset($row['name'])) {
 				$data['name'] = $row['name'];
 				$data['content'] = $row['content'];
-				$data['seo']['title'] = $row['seo_title'];
-				$data['seo']['description'] = $row['seo_desc'];
+				$data['seo']['title'] = $row['seo_title'] ? $row['seo_title'] : ($row['name'] ? $row['name'] : $this->template->getConfigVars('about'));
+				$data['seo']['description'] = $row['seo_desc'] ? $row['seo_desc'] : ($row['content'] ? substr(strip_tags($row['content']),300) : $row['seo_title']);
 			}
 			elseif (isset($row['name_pages'])) {
 				$data['id'] = $row['id_pages'];
 				$data['id_parent'] = !is_null($row['id_parent']) ? $row['id_parent'] : NULL;
-				$data['title'] = $row['name_pages'];
+				$data['name'] = $row['name_pages'];
 				$data['iso'] = $row['iso_lang'];
 				$data['url']  =
 					$this->routingUrl->getBuildUrl(array(
@@ -241,12 +256,13 @@ class frontend_model_about extends frontend_db_about {
 				if ($row['id_pages'] == $current['controller']['id']) {
 					$data['active'] = true;
 				}
+				$data['resume'] = $row['resume_pages'] ? $row['resume_pages'] : ($row['content_pages'] ? $string_format->truncate(strip_tags($row['content_pages'])) : '');
 				$data['content'] = $row['content_pages'];
 				$data['menu'] = $row['menu_pages'];
 				$data['date']['update'] = $row['last_update'];
 				$data['date']['register'] = $row['date_register'];
 				$data['seo']['title'] = $row['seo_title_pages'];
-				$data['seo']['description'] = $row['seo_desc_pages'];
+				$data['seo']['description'] = $row['seo_desc_pages'] ? $row['seo_desc_pages'] : ($data['resume'] ? $data['resume'] : $data['seo']['title']);
 				// Plugin
 				if($newRow != false){
 					if(is_array($newRow)){
@@ -378,7 +394,7 @@ class frontend_model_about extends frontend_db_about {
 						if($about[$social_name] !== null) {
 							switch ($social_name) {
 								case 'facebook':
-									$link = (($this->touch) ? 'fb://facewebmodal/f?href=' : '') . 'https://www.facebook.com/'.$about[$social_name].'/';
+									$link = (($this->touch && !$this->amp) ? 'fb://facewebmodal/f?href=' : '') . 'https://www.facebook.com/'.$about[$social_name].'/';
 									//$link = 'https://www.facebook.com/'.$about[$social_name].'/';
 									break;
 								case 'twitter':
@@ -432,13 +448,15 @@ class frontend_model_about extends frontend_db_about {
 					$this->company[$info] = $about['openinghours'];
 
 					$op = parent::fetchData(array('context'=>'all','type'=>'op'));
+					$op_content = parent::fetchData(array('context'=>'all','type'=>'op_content'));
+
 					foreach ($op as $d) {
-						$schedule[$d['day_abbr']] = $d;
-						//array_shift($schedule[$d['day_abbr']]);
-						//$schedule[$d['day_abbr']]['open_time'] = explode(':',$d['open_time']);
-						//$schedule[$d['day_abbr']]['close_time'] = explode(':',$d['close_time']);
-						//$schedule[$d['day_abbr']]['noon_start'] = explode(':',$d['noon_start']);
-						//$schedule[$d['day_abbr']]['noon_end'] = explode(':',$d['noon_end']);
+						$abbr = $d['day_abbr'];
+						$schedule[$abbr] = $d;
+
+						foreach ($op_content as $opc) {
+							$schedule[$abbr]['close_txt'][$opc['iso_lang']] = $opc['text_' . strtolower($abbr)];
+						}
 					}
 					break;
 				default:
@@ -552,21 +570,17 @@ class frontend_model_about extends frontend_db_about {
 				$conf['id'] = null;
 				$conf['type'] = null;
 			}
-			elseif (is_array($custom['select'])) {
-				if (array_key_exists($conf['lang'],$custom['select'])) {
-					$conf['id'] = $custom['select'][$conf['lang']];
-					$conf['type'] = 'collection';
-				}
+			else {
+				$conf['id'] = $custom['select'];
+				$conf['type'] = 'collection';
 			}
 		}
 
 		// Define exclude
 		if (isset($custom['exclude'])) {
 			if (is_array($custom['exclude'])) {
-				if (array_key_exists($conf['lang'],$custom['exclude'])) {
-					$conf['exclude'] = $custom['exclude'][$conf['lang']];
-					$conf['type'] = 'collection';
-				}
+				$conf['exclude'] = $custom['exclude'];
+				$conf['type'] = 'collection';
 			}
 		}
 
@@ -677,11 +691,11 @@ class frontend_model_about extends frontend_db_about {
 				$conditions .= ' WHERE lang.iso_lang = :iso AND c.published_pages = 1 AND p.id_parent IS NULL ';
 
 				if (isset($custom['select'])) {
-					$conditions .= ' AND p.id_pages IN (' . $conf['id'] . ') ';
+					$conditions .= ' AND p.id_pages IN (' . implode(',',$conf['id']) . ') ';
 				}
 
 				if (isset($custom['exclude'])) {
-					$conditions .= ' AND p.id_pages NOT IN (' . $conf['id'] . ') ';
+					$conditions .= ' AND p.id_pages NOT IN (' . implode(',',$conf['id']) . ') ';
 				}
 
 				if ($conf['type'] == 'menu') {
@@ -829,5 +843,15 @@ class frontend_model_about extends frontend_db_about {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * @param $id
+	 * @return array
+	 * @throws Exception
+	 */
+	public function getParents($id)
+	{
+		return $this->data->getParents($id);
 	}
 }

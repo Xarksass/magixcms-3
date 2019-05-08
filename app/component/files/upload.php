@@ -39,15 +39,19 @@
  * Time: 12:17
  * License: Dual licensed under the MIT or GPL Version
  */
+// import the Intervention Image Manager Class
+use Intervention\Image\ImageManager;
+
 class component_files_upload{
 
-    protected $config;
+    protected $config,$imageManager;
     public $img,$file,$img_multiple;
 
     public function __construct()
     {
         $formClean = new form_inputEscape();
         $this->config = new component_collections_config();
+        $this->imageManager = new ImageManager(array('driver' => 'gd'));
         if(isset($_FILES['img_multiple']["name"])){
             $this->img_multiple = $_FILES['img_multiple']["name"];
         }
@@ -212,19 +216,21 @@ class component_files_upload{
      * Return path string for upload
      * @param $data
      * @return string
+     * @throws Exception
      */
     public function dirImgUpload($data){
         $makeFiles = new filesystem_makefile();
         if(is_array($data)){
             if(array_key_exists('upload_root_dir',$data)){
+
+                if(!file_exists($this->imgBasePath($data['upload_root_dir'].DIRECTORY_SEPARATOR))){
+                    $makeFiles->mkdir($this->imgBasePath($data['upload_root_dir'].DIRECTORY_SEPARATOR));
+                }
                 if(array_key_exists('imgBasePath',$data)){
                     if($data['imgBasePath']){
                         $url = $this->imgBasePath($data['upload_root_dir'].DIRECTORY_SEPARATOR);
                     }else{
                         $url = $data['upload_root_dir'].DIRECTORY_SEPARATOR;
-                    }
-                    if(!file_exists($url)){
-                        $makeFiles->mkdir($url);
                     }
                 }
                 return $url;
@@ -235,7 +241,9 @@ class component_files_upload{
     /**
      * Return path collection for upload
      * @param $data
+     * @param bool $debug
      * @return array
+     * @throws Exception
      */
     public function dirImgUploadCollection($data,$debug = false){
         $makeFiles = new filesystem_makefile();
@@ -262,6 +270,93 @@ class component_files_upload{
                 return $url;
             }
         }
+    }
+
+    /**
+     * Renomme une image
+     * @param $data
+     * @param $imgCollection
+     * @return bool|string
+     */
+	public function renameImages($data, $imgCollection)
+	{
+		try {
+			$makeFiles = new filesystem_makefile();
+			$fetchConfig = $this->config->fetchData(
+				array('context'=>'all','type'=>'imgSize'),
+				array('module_img'=>$data['module_img'],'attribute_img'=>$data['attribute_img'])
+			);
+			$img = pathinfo($data['edit']);
+			$ext = $img['extension'];
+			$filename = $img['filename'];
+            $extwebp = 'webp';
+
+			// Rename the image
+			if (!empty($data['edit'] && !empty($data['name']))) {
+				if (is_array($imgCollection)) {
+					$dirImgArray = $this->dirImgUploadCollection($imgCollection);
+                    // Check if the image to rename exists and if there is not already an image with this name and extension
+                    $filesPath = (string) $dirImgArray;
+                    if(!file_exists($filesPath.$data['name'].'.'.$ext)
+                        && file_exists($filesPath.$filename.'.'.$ext)) {
+                        $makeFiles->rename(
+                            array(
+                                'origin' => $filesPath.$filename.'.'.$ext,
+                                'target' => $filesPath.$data['name'].'.'.$ext
+                            )
+                        );
+                    }
+                    else {
+                        return false;
+                    }
+
+					foreach ($fetchConfig as $key => $value) {
+						$filesPath = is_array($dirImgArray) ? $dirImgArray[$key] : $dirImgArray;
+						$prefix = (array_key_exists('prefix', $data) && is_array($data['prefix'])) ? $data['prefix'][$key] : '';
+                        $suffix = (array_key_exists('suffix', $data) && is_array($data['suffix'])) ? $data['suffix'][$key] : '';
+
+						// Check if the original image still exists:
+						// - if it is, the renaming has failed, the process should not continue
+						// - if not, the image has been correctly renamed or the image has never exist, the process can continue
+						if(!file_exists($filesPath.$data['edit'])) {
+							// Check if the image to rename exists and if there is not already an image with this name and extension
+							if (file_exists($filesPath.$prefix.$filename.$suffix.'.'.$ext)
+								&& !file_exists($filesPath.$prefix.$data['name'].$suffix.'.'.$ext)) {
+
+							    $makeFiles->rename(
+									array(
+										'origin' => $filesPath.$prefix.$filename.$suffix.'.'.$ext,
+										'target' => $filesPath.$prefix.$data['name'].$suffix.'.'.$ext
+									)
+								);
+
+                                // Check if webp is defined
+                                if(!isset($data['webp']) || $data['webp'] != false){
+                                    // Check if the image to rename exists and if there is not already an image with this name and webp extension
+                                    if(file_exists($filesPath.$prefix.$filename.$suffix.'.'.$extwebp)
+                                        && !file_exists($filesPath.$prefix.$data['name'].$suffix.'.'.$extwebp)){
+                                        $makeFiles->rename(
+                                            array(
+                                                'origin' => $filesPath.$prefix.$filename.$suffix.'.'.$extwebp,
+                                                'target' => $filesPath.$prefix.$data['name'].$suffix.'.'.$extwebp
+                                            )
+                                        );
+                                    }
+                                }
+							}
+						}
+						else {
+							return false;
+						}
+					}
+					return $data['name'].'.'.$ext;
+				}
+			}
+		}
+		catch (Exception $e){
+			$logger = new debug_logger(MP_LOG_DIR);
+			$logger->log('php', 'error', 'An error has occured : '.$e->getMessage(), debug_logger::LOG_MONTH);
+		}
     }
     /**
      * Vérifie si le type est bien une image
@@ -388,10 +483,12 @@ class component_files_upload{
      * Upload multiple image
      * @param $imgCollection
      * @param $path
+     * @param bool $data
      * @param bool $debug
      * @return array
+     * @throws Exception
      */
-    public function multiUploadImg($imgCollection,$path,$debug=false){
+    public function multiUploadImg($imgCollection,$path,$data=false,$debug=false){
         $msg = null;
         $response = null;
         //print_r($imgCollection);
@@ -420,30 +517,50 @@ class component_files_upload{
                                         $msg .= 'Temporary File Error';
                                     }
                                 }
+
+                                $prefix = '';
+                                $name = filter_rsa::randMicroUI();
+                                if(is_array($data)){
+                                	if(isset($data['prefix_name'])) {
+                                		if(isset($data['prefix_increment']) && $data['prefix_increment']) {
+                                			$data['prefix_name']++;
+											$prefix = $data['prefix_name'].'_';
+										}
+                                		else {
+											$prefix = $data['prefix_name'];
+										}
+									}
+
+                                	if(isset($data['name'])) {
+										$name = $data['name'];
+									}
+								}
+								$name = $prefix.$name;
+
                                 if($debug){
                                     $result[] = array(
-                                        'statut'=>true,
-                                        'notify'=>'upload',
-                                        'name'=>$item["name"],
-                                        'tmp_name'=>$item["tmp_name"],
-                                        'new_name'=> filter_rsa::randMicroUI(),
+                                        'statut'=> true,
+                                        'notify'=> 'upload',
+                                        'name'=> $item["name"],
+                                        'tmp_name'=> $item["tmp_name"],
+                                        'new_name'=> $name,
                                         'mimecontent'=>
                                             array(
-                                                'type'=>$mimeContent['type'],
-                                                'mime'=>$mimeContent['mime']
+                                                'type'=> $mimeContent['type'],
+                                                'mime'=> $mimeContent['mime']
                                             )
                                     );
                                 }else{
                                     $result[] = array(
-                                        'statut'=>true,
-                                        'notify'=>'upload',
-                                        'name'=>$item["name"],
-                                        'tmp_name'=>$item["tmp_name"],
-                                        'new_name'=> filter_rsa::randMicroUI(),
+                                        'statut'=> true,
+                                        'notify'=> 'upload',
+                                        'name'=> $item["name"],
+                                        'tmp_name'=> $item["tmp_name"],
+                                        'new_name'=> $name,
                                         'mimecontent'=>
                                             array(
-                                                'type'=>$mimeContent['type'],
-                                                'mime'=>$mimeContent['mime']
+                                                'type'=> $mimeContent['type'],
+                                                'mime'=> $mimeContent['mime']
                                             )
                                     );
                                 }
@@ -539,9 +656,11 @@ class component_files_upload{
                 'name'              => filter_rsa::randMicroUI(),
                 'edit'              => $data['img'],
                 'prefix'            => array('l_','m_','s_'),
+                'suffix'            => array('@500','@480','@300'),
                 'module_img'        => 'pages',
                 'attribute_img'     => 'page',
-                'original_remove'   => false
+                'original_remove'   => false,
+                'webp'              => true
             ),
             array(
                 'upload_root_dir'   => 'upload/test', //string
@@ -563,16 +682,36 @@ class component_files_upload{
                 $makeFiles = new filesystem_makefile();
                 $resultUpload = null;
                 $debugResult = null;
-                $dirImg = $this->dirImgUpload(array_merge(array('upload_root_dir'=>$imgCollection['upload_root_dir']),array('imgBasePath'=>true)));
-                $fetchConfig = $this->config->fetchData(array('context'=>'all','type'=>'imgSize'),array('module_img'=>$data['module_img'],'attribute_img'=>$data['attribute_img']));
+                $extwebp = 'webp';
+                $dirImg = $this->dirImgUpload(
+                    array_merge(
+                        array('upload_root_dir'=>$imgCollection['upload_root_dir']),
+                        array('imgBasePath'=>true)
+                    )
+                );
+				$fetchConfig = $this->config->fetchData(
+				    array(
+				        'context'=>'all',
+                        'type'=>'imgSize'
+                    ),
+                    array(
+                        'module_img'=>$data['module_img'],
+                        'attribute_img'=>$data['attribute_img']
+                    )
+                );
                 //print_r($fetchConfig);
                 if(!empty($this->$img)){
                     /**
-                     * Envoi une image dans le dossier "racine" catalogimg
+                     * Envoi une image dans le dossier "racine" du module
                      */
                     $resultUpload = $this->uploadImg(
                         $img,
-                        $this->dirImgUpload(array_merge(array('upload_root_dir'=>$imgCollection['upload_root_dir']),array('imgBasePath'=>false))),
+                        $this->dirImgUpload(
+                            array_merge(
+                                array('upload_root_dir'=>$imgCollection['upload_root_dir']),
+                                array('imgBasePath'=>false)
+                            )
+                        ),
                         $debug
                     );
 
@@ -589,6 +728,60 @@ class component_files_upload{
                                     $makeFiles->remove(array($dirImg.$data['prefix'][$key].$data['edit']));
                                 }
                             }*/
+
+
+							// Supprime l'ancienne image
+							if (!empty($data['edit'])) {
+								if (is_array($imgCollection)) {
+									$dirImgArray = $this->dirImgUploadCollection($imgCollection);
+									//print_r($dirImgArray);
+                                    $imgData = pathinfo($dirImgArray.$data['edit']);
+                                    $filename = $imgData['filename'];
+                                    $mimeContent = $this->mimeContentType(array('filename'=>$dirImgArray.$data['edit']));
+                                    //print $filename.'.'.$mimeContent['type'];
+									foreach ($fetchConfig as $key => $value) {
+										if (is_array($dirImgArray)) {
+											$filesPath = $dirImgArray[$key];
+										} else {
+											$filesPath = $dirImgArray;
+										}
+										if (array_key_exists('prefix', $data)) {
+											if (is_array($data['prefix'])) {
+												$prefix = $data['prefix'][$key];
+											} else {
+												$prefix = '';
+											}
+										} else {
+											$prefix = '';
+										}
+
+                                        if (array_key_exists('suffix', $data)) {
+                                            if (is_array($data['suffix'])) {
+                                                $suffix = $data['suffix'][$key];
+                                            } else {
+                                                $suffix = '';
+                                            }
+                                        } else {
+                                            $suffix = '';
+                                        }
+
+										/*if (file_exists($filesPath . $prefix . $data['edit'])) {
+											$makeFiles->remove(array($filesPath . $prefix . $data['edit']));
+										}
+										if (file_exists($filesPath . $data['edit'])) {
+											$makeFiles->remove(array($filesPath . $data['edit']));
+										}*/
+
+                                        if (file_exists($filesPath . $prefix . $filename. $suffix.'.'.$mimeContent['type'])) {
+                                            $makeFiles->remove(array($filesPath . $prefix . $filename. $suffix.'.'.$mimeContent['type']));
+                                        }
+                                        if (file_exists($filesPath . $filename.'.'.$mimeContent['type'])) {
+                                            $makeFiles->remove(array($filesPath . $filename.'.'.$mimeContent['type']));
+                                        }
+									}
+								}
+							}
+
                             // Renomme le fichier
                             $makeFiles->rename(
                                 array(
@@ -597,11 +790,11 @@ class component_files_upload{
                                 )
                             );
                             //print $dirImg.$data['name'].$fileExtends;
+
                             /**
                              *
                              * Charge la taille des images des sous catégories du catalogue
                              */
-
                             if ($fetchConfig != null) {
                                 if (is_array($imgCollection)) {
                                     // return array collection
@@ -613,11 +806,11 @@ class component_files_upload{
                                             $filesPath = $dirImgArray;
                                         }
                                         /**
-                                         * Initialisation de la classe phpthumb
+                                         * Initialisation de la classe interventionImage
                                          * @var void
                                          */
                                         try {
-                                            $thumb = PhpThumbFactory::create($dirImg . $data['name'] . '.'.$resultUpload['mimecontent']['type'],array('jpegQuality'=>70));
+                                            $thumb = $this->imageManager->make($dirImg . $data['name'] . '.'.$resultUpload['mimecontent']['type']);
                                         } catch (Exception $e) {
                                             $logger = new debug_logger(MP_LOG_DIR);
                                             $logger->log('php', 'error', 'An error has occured : ' . $e->getMessage(), debug_logger::LOG_MONTH);
@@ -632,17 +825,43 @@ class component_files_upload{
                                             $prefix = '';
                                         }
 
+                                        if (array_key_exists('suffix', $data)) {
+                                            if (is_array($data['suffix'])) {
+                                                $suffix = $data['suffix'][$key];
+                                            } else {
+                                                $suffix = '';
+                                            }
+                                        } else {
+                                            $suffix = '';
+                                        }
+
                                         switch ($value['resize_img']) {
                                             case 'basic':
-                                                $thumb->resize($value['width_img'], $value['height_img']);
-                                                $thumb->save($filesPath . $prefix . $data['name'] . '.'.$resultUpload['mimecontent']['type']);
+                                                $thumb->resize($value['width_img'], $value['height_img'], function ($constraint) {
+                                                    $constraint->aspectRatio();
+                                                    $constraint->upsize();
+                                                });
+                                                $thumb->save($filesPath . $prefix . $data['name']. $suffix . '.'.$resultUpload['mimecontent']['type'],80);
+                                                if (  function_exists('imagewebp')) {
+                                                    // Check if webp is defined
+                                                    if (!isset($data['webp']) || $data['webp'] != false) {
+                                                        $thumb->save($filesPath . $prefix . $data['name'] . $suffix. '.' . $extwebp);
+                                                    }
+                                                }
                                                 break;
                                             case 'adaptive':
-                                                $thumb->adaptiveResize($value['width_img'], $value['height_img']);
-                                                $thumb->save($filesPath . $prefix . $data['name'] . '.'.$resultUpload['mimecontent']['type']);
+                                                //$thumb->adaptiveResize($value['width_img'], $value['height_img']);
+                                                $thumb->fit($value['width_img'], $value['height_img']);
+                                                $thumb->save($filesPath . $prefix . $data['name']. $suffix . '.'.$resultUpload['mimecontent']['type'],80);
+                                                if (  function_exists('imagewebp')) {
+                                                    // Check if webp is defined
+                                                    if (!isset($data['webp']) || $data['webp'] != false) {
+                                                        $thumb->save($filesPath . $prefix . $data['name'] . $suffix. '.' . $extwebp);
+                                                    }
+                                                }
                                                 break;
                                         }
-                                        $filesPathDebug[] = $filesPath . $prefix . $data['name'] . '.'.$resultUpload['mimecontent']['type'];
+                                        $filesPathDebug[] = $filesPath . $prefix . $data['name']. $suffix . '.'.$resultUpload['mimecontent']['type'];
                                     }
 
                                     $makeFiles->rename(
@@ -652,35 +871,6 @@ class component_files_upload{
                                         )
                                     );
 
-                                }
-                            }
-
-                            // Supprime l'ancienne image
-                            if (!empty($data['edit'])) {
-                                if (is_array($imgCollection)) {
-                                    $dirImgArray = $this->dirImgUploadCollection($imgCollection);
-                                    foreach ($fetchConfig as $key => $value) {
-                                        if (is_array($dirImgArray)) {
-                                            $filesPath = $dirImgArray[$key];
-                                        } else {
-                                            $filesPath = $dirImgArray;
-                                        }
-                                        if (array_key_exists('prefix', $data)) {
-                                            if (is_array($data['prefix'])) {
-                                                $prefix = $data['prefix'][$key];
-                                            } else {
-                                                $prefix = '';
-                                            }
-                                        } else {
-                                            $prefix = '';
-                                        }
-                                        if (file_exists($filesPath . $prefix . $data['edit'])) {
-                                            $makeFiles->remove(array($filesPath . $prefix . $data['edit']));
-                                        }
-                                        if (file_exists($filesPath . $data['edit'])) {
-                                            $makeFiles->remove(array($filesPath . $data['edit']));
-                                        }
-                                    }
                                 }
                             }
 
@@ -748,7 +938,8 @@ class component_files_upload{
             'prefix'            => array('s_'),
             'module_img'        => 'pages',
             'attribute_img'     => 'page',
-            'original_remove'   => false
+            'original_remove'   => false,
+            'webp'              => true
         ),
         array(
             'upload_root_dir'   => 'upload/pages', //string
@@ -769,6 +960,7 @@ class component_files_upload{
                 $makeFiles = new filesystem_makefile();
                 $resultUpload = null;
                 $debugResult = null;
+                $extwebp = 'webp';
                 $dirImg = $this->dirImgUpload(
                     array_merge(
                         array(
@@ -787,7 +979,13 @@ class component_files_upload{
                      */
                     $resultUpload = $this->multiUploadImg(
                         $img_multiple,
-                        $this->dirImgUpload(array_merge(array('upload_root_dir'=>$imgCollection['upload_root_dir']),array('imgBasePath'=>false))),
+                        $this->dirImgUpload(
+                            array_merge(
+                                array('upload_root_dir'=>$imgCollection['upload_root_dir']),
+                                array('imgBasePath'=>false)
+                            )
+                        ),
+                        $data,
                         $debug
                     );
 
@@ -814,9 +1012,11 @@ class component_files_upload{
                                             } else {
                                                 $filesPath = $dirImgArray;
                                             }
-
+                                            /**
+                                             * init interventionImage
+                                             */
                                             try {
-                                                $thumb = PhpThumbFactory::create($dirImg . $value['new_name'] . '.'.$value['mimecontent']['type'],array('jpegQuality'=>70));
+                                                $thumb = $this->imageManager->make($dirImg . $value['new_name'] . '.'.$value['mimecontent']['type']);
                                             } catch (Exception $e) {
                                                 $logger = new debug_logger(MP_LOG_DIR);
                                                 $logger->log('php', 'error', 'An error has occured : ' . $e->getMessage(), debug_logger::LOG_MONTH);
@@ -834,12 +1034,27 @@ class component_files_upload{
 
                                             switch ($valueConf['resize_img']) {
                                                 case 'basic':
-                                                    $thumb->resize($valueConf['width_img'], $valueConf['height_img']);
-                                                    $thumb->save($filesPath . $prefix . $value['new_name'] . '.'.$value['mimecontent']['type']);
+                                                    $thumb->resize($valueConf['width_img'], $valueConf['height_img'], function ($constraint) {
+                                                        $constraint->aspectRatio();
+                                                        $constraint->upsize();
+                                                    });
+                                                    $thumb->save($filesPath . $prefix . $value['new_name'] . '.'.$value['mimecontent']['type'],80);
+                                                    if (  function_exists('imagewebp')) {
+                                                        // Check if webp is defined
+                                                        if (!isset($data['webp']) || $data['webp'] != false) {
+                                                            $thumb->save($filesPath . $prefix . $value['new_name'] . '.' . $extwebp);
+                                                        }
+                                                    }
                                                     break;
                                                 case 'adaptive':
-                                                    $thumb->adaptiveResize($valueConf['width_img'], $valueConf['height_img']);
-                                                    $thumb->save($filesPath . $prefix . $value['new_name'] . '.'.$value['mimecontent']['type']);
+                                                    $thumb->fit($valueConf['width_img'], $valueConf['height_img']);
+                                                    $thumb->save($filesPath . $prefix . $value['new_name'] . '.'.$value['mimecontent']['type'],80);
+                                                    if (  function_exists('imagewebp')) {
+                                                        // Check if webp is defined
+                                                        if (!isset($data['webp']) || $data['webp'] != false) {
+                                                            $thumb->save($filesPath . $prefix . $value['new_name'] . '.' . $extwebp);
+                                                        }
+                                                    }
                                                     break;
                                             }
                                             $filesPathDebug[] = $filesPath . $prefix . $value['new_name'] . '.'.$value['mimecontent']['type'];
@@ -898,10 +1113,12 @@ class component_files_upload{
         }
     }
     ################# Upload Files ##############
+
     /**
      * Return path string for upload
      * @param $data
      * @return string
+     * @throws Exception
      */
     public function dirFileUpload($data){
         if(is_array($data)){
@@ -944,12 +1161,14 @@ class component_files_upload{
             }
         }
     }
+
     /**
      * Upload un fichier
      * @param files $file
      * @param dir $path
      * @param bool $debug
-     * @return null|string
+     * @return array
+     * @throws Exception
      */
     public function uploadFiles($file,$path,$debug=false){
         $msg = null;
@@ -1015,7 +1234,12 @@ class component_files_upload{
 
                     $resultUpload = $this->uploadFiles(
                         $file,
-                        $this->dirFileUpload(array_merge(array('upload_root_dir'=>$filesCollection['upload_root_dir'],'upload_dir'=>$filesCollection['upload_dir']),array('fileBasePath'=>false))),
+                        $this->dirFileUpload(
+                            array_merge(
+                                array('upload_root_dir'=>$filesCollection['upload_root_dir'],'upload_dir'=>$filesCollection['upload_dir']),
+                                array('fileBasePath'=>false)
+                            )
+                        ),
                         $debug
                     );
 

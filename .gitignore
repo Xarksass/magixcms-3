@@ -16,8 +16,8 @@
 /admin/caching/templates_c/*
 /admin/caching/tpl_caches/*
 /admin/template/js/vendor/filemanager/js/jPlayer/node_modules/*
-/plugins/*
-!/plugins/contact
-!/plugins/clearcache
-/skin/*
-!/skin/default
+skin/*
+!skin/default
+plugins/*
+!plugins/contact
+!plugins/clearcache

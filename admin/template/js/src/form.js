@@ -202,20 +202,35 @@ var globalForm = (function ($, undefined) {
         }
         else if($(f).hasClass('edit_form_img')) {
             options.success = function (d) {
-                $.jmRequest.initbox(d.notify,{ display:false });
+                $.jmRequest.initbox(d.notify,{ display:true });
                 //initAlert(d.notify,4000);
                 if(d.status && d.result) {
-                    $('.block-img').empty();
-                    $('.block-img').html(d.result);
+                    if($(f).data('target')){
+                        var targ = $(f).data('target');
+                        $('#'+targ).empty();
+                        $('#'+targ).html(d.result);
+                    }else{
+                        $('.block-img').empty();
+                        $('.block-img').html(d.result);
+                    }
                 }
             };
         }
         else if($(f).hasClass('delete_form_img')) {
             options.success = function (d) {
-                $.jmRequest.initbox(d.notify,{ display:false });
+                $.jmRequest.initbox(d.notify,{ display:true });
                 if(d.status && d.result) {
-                    $('.block-img').empty();
-                    $('.block-img').html(d.result);
+                    if($(f).data('target')){
+                        var targ = $(f).data('target');
+                        $('#'+targ).empty();
+                        $('#'+targ).html(d.result);
+                    }else{
+                        $('.block-img').empty();
+                        $('.block-img').html(d.result);
+                    }
+
+                    if(typeof imgdrop !== 'undefined') imgdrop.reset();
+                    if(typeof $('.img-drop') !== 'undefined') $('.img-drop').addClass('no-img');
                 }
             };
         }
@@ -259,7 +274,13 @@ var globalForm = (function ($, undefined) {
             options.success = function (d) {
                 if($(f).find('.selectpicker')) {
                     $(f).find('.selectpicker').bootstrapSelect('clear');
-                    $(f).find('.selectpicker').bootstrapSelect('empty');
+                    if(d.extend) {
+                        $(f).find('.selectpicker [data-value="'+d.extend[0].id+'"]').remove();
+                        $(f).find('.selectpicker').bootstrapSelect('reset');
+                    }
+                    else {
+                        $(f).find('.selectpicker').bootstrapSelect('empty');
+                    }
                 }
                 sub = $(f).data('sub') == '' ? false : $(f).data('sub');
                 initAlert(d.notify,4000,sub);
@@ -399,19 +420,26 @@ var globalForm = (function ($, undefined) {
      * @param {string} sub - The name of the sub-controller used by the script.
      */
     function delete_data(modal, id, controller, sub) {
-        $(modal+' input[type="hidden"]').val(id);
-        $(modal).modal('show');
-        var url = $('#delete_form').attr('action');
-        if(url.indexOf("tabs") === -1) {
-            url = url+(sub?'&tabs='+sub:'');
+        if(id === 'uninstall') {
+            $(modal+' input[name="action"]').val(id);
+            $(modal+' input[name="controller"]').val(controller);
+            $(modal).modal('show');
         }
         else {
-            url.replace('&tabs=([^&]*)','&tabs='+sub);
+            $(modal+' input[type="hidden"]').val(id);
+            $(modal).modal('show');
+            var url = $('#delete_form').attr('action');
+            if(url.indexOf("tabs") === -1) {
+                url = url+(sub?'&tabs='+sub:'');
+            }
+            else {
+                url.replace('&tabs=([^&]*)','&tabs='+sub);
+            }
+
+            $(modal).find('form').attr('action',url);
+
+            initValidation(controller,'#delete_form',sub);
         }
-
-        $(modal).find('form').attr('action',url);
-
-        initValidation(controller,'#delete_form',sub);
     }
 
     /**

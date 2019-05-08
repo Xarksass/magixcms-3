@@ -42,12 +42,13 @@
  */
 class frontend_model_news extends frontend_db_news {
 
-    protected $routingUrl,$imagesComponent,$modelPlugins,$template,$dateFormat;
+    protected $routingUrl,$imagesComponent,$modelPlugins,$template,$dateFormat,$seo,$logo;
 
-	/**
-	 * frontend_model_news constructor.
-	 * @param stdClass $t
-	 */
+    /**
+     * frontend_model_news constructor.
+     * @param stdClass $t
+     * @throws Exception
+     */
     public function __construct($t = null)
     {
 		$this->template = $t ? $t : new frontend_model_template();
@@ -55,6 +56,22 @@ class frontend_model_news extends frontend_db_news {
 		$this->imagesComponent = new component_files_images($this->template);
 		$this->modelPlugins = new frontend_model_plugins();
         $this->dateFormat = new date_dateformat();
+        $this->seo = new frontend_model_seo('news', '', '');
+        $this->logo = new frontend_model_logo();
+    }
+
+    /**
+     * @return array
+     */
+	public function rootSeo()
+	{
+		$rootSeo = array();
+		$this->seo->level = 'root';
+		$seoTitle = $this->seo->replace_var_rewrite('','','title');
+		$rootSeo['title'] = $seoTitle ? $seoTitle : $this->template->getConfigVars('news');
+		$seoDesc = $this->seo->replace_var_rewrite('','','description');
+		$rootSeo['description'] = $seoDesc ? $seoDesc : $this->template->getConfigVars('last_news');
+		return $rootSeo;
     }
 
     /**
@@ -62,26 +79,26 @@ class frontend_model_news extends frontend_db_news {
      * @param $row
      * @param $current
      * @param bool $newRow
-     * @return null
+     * @return null|array
+     * @throws Exception
      */
     public function setItemData($row,$current,$newRow = false)
     {
-
+		$string_format = new component_format_string();
         $data = null;
+        $extwebp = 'webp';
+        $imagePlaceHolder = $this->logo->getImagePlaceholder();
 
         if (isset($row['id_news'])) {
-            $data['id']    = $row['id_news'];
-            $data['title'] = $row['name_news'];
-            $data['url']  =
-                $this->routingUrl->getBuildUrl(array(
-                        'type' => 'news',
-                        'iso'  => $row['iso_lang'],
-                        'date' => $row['date_publish'],
-                        'id'   => $row['id_news'],
-                        'url'  => $row['url_news']
-                    )
-                );
-
+            $data['id'] = $row['id_news'];
+            $data['name'] = $row['name_news'];
+            $data['url'] = $this->routingUrl->getBuildUrl(array(
+				'type' => 'news',
+				'iso'  => $row['iso_lang'],
+				'date' => $row['date_publish'],
+				'id'   => $row['id_news'],
+				'url'  => $row['url_news']
+			));
 
             if (isset($row['img_news'])) {
                 $imgPrefix = $this->imagesComponent->prefix();
@@ -89,20 +106,29 @@ class frontend_model_news extends frontend_db_news {
                     'module_img'    =>'news',
                     'attribute_img' =>'news'
                 ));
+
+                // # return filename without extension
+                $pathinfo = pathinfo($row['img_news']);
+                $filename = $pathinfo['filename'];
+
                 foreach ($fetchConfig as $key => $value) {
+					$imginfo = $this->imagesComponent->getImageInfos(component_core_system::basePath().'/upload/news/'.$row['id_news'].'/'.$imgPrefix[$value['type_img']] . $row['img_news']);
                     $data['img'][$value['type_img']]['src'] = '/upload/news/'.$row['id_news'].'/'.$imgPrefix[$value['type_img']] . $row['img_news'];
-					$data['img'][$value['type_img']]['w'] = $value['width_img'];
-					$data['img'][$value['type_img']]['h'] = $value['height_img'];
+                    $data['img'][$value['type_img']]['src_webp'] = '/upload/news/'.$row['id_news'].'/'.$imgPrefix[$value['type_img']] . $filename. '.' .$extwebp;
+					//$data['img'][$value['type_img']]['w'] = $value['width_img'];
+					$data['img'][$value['type_img']]['w'] = $value['resize_img'] === 'basic' ? $imginfo['width'] : $value['width_img'];
+					//$data['img'][$value['type_img']]['h'] = $value['height_img'];
+					$data['img'][$value['type_img']]['h'] = $value['resize_img'] === 'basic' ? $imginfo['height'] : $value['height_img'];
 					$data['img'][$value['type_img']]['crop'] = $value['resize_img'];
+                    $data['img'][$value['type_img']]['ext'] = mime_content_type(component_core_system::basePath().'/upload/news/'.$row['id_news'].'/'.$imgPrefix[$value['type_img']] . $row['img_news']);
                 }
+				$data['img']['name'] = $row['img_news'];
             }
-            $data['img']['default'] = '/skin/'.$this->template->theme.'/img/news/default.png';
-
-            $data['active'] = false;
-
-            if ($row['id_news'] == $current['controller']['id']) {
-                $data['active'] = true;
-            }
+            $data['img']['default'] = isset($imagePlaceHolder['news']) ? $imagePlaceHolder['news'] : '/skin/'.$this->template->theme.'/img/news/default.png';
+			$data['img']['alt'] = $row['alt_img'];
+			$data['img']['title'] = $row['title_img'];
+			$data['img']['caption'] = $row['caption_img'];
+            $data['active'] = ($row['id_news'] == $current['controller']['id']) ? true : false;
 
             $data['date']['register'] = $this->dateFormat->SQLDate($row['date_register']);
             $data['date']['update']   = $this->dateFormat->SQLDate($row['last_update']);
@@ -112,10 +138,11 @@ class frontend_model_news extends frontend_db_news {
             $data['date']['month'] = $this->dateFormat->dateDefine('m',$row['date_publish']);
             $data['date']['day']   = $this->dateFormat->dateDefine('d',$row['date_publish']);
 
-            $data['resume']  = $row['resume_news'];
             $data['content'] = $row['content_news'];
+			$data['lead'] = $row['resume_news'];
+			$data['resume'] = $row['resume_news'] ? $row['resume_news'] : ($row['content_news'] ? $string_format->truncate(strip_tags($row['content_news'])) : '');
 
-            $data['tags']    =   null;
+            $data['tags'] = null;
             if(isset($row['tags'])) {
                 if (is_array($row['tags'])) {
                     foreach ($row['tags'] as $key => $value) {
@@ -140,6 +167,22 @@ class frontend_model_news extends frontend_db_news {
                 }
             }
 
+			$this->seo->level = 'record';
+			if (!isset($row['seo_title_news']) || empty($row['seo_title_news'])) {
+				$seoTitle = $this->seo->replace_var_rewrite('',$data['name'],'title');
+				$data['seo']['title'] = $seoTitle ? $seoTitle : $data['name'];
+			}
+			else {
+				$data['seo']['title'] = $row['seo_title_news'];
+			}
+			if (!isset($row['seo_desc_news']) || empty($row['seo_desc_news'])) {
+				$seoDesc = $this->seo->replace_var_rewrite('',$data['name'],'description');
+				$data['seo']['description'] = $seoDesc ? $seoDesc : ($data['resume'] ? $data['resume'] : $data['seo']['title']);
+			}
+			else {
+				$data['seo']['description'] = $row['seo_desc_news'];
+			}
+
             if(isset($row['prev'])) $data['prev'] = $row['prev'];
             if(isset($row['next'])) $data['next'] = $row['next'];
         }
@@ -161,6 +204,7 @@ class frontend_model_news extends frontend_db_news {
     /**
      * @param $row
      * @return array
+     * @throws Exception
      */
     public function setHrefLangData($row)
     {
@@ -185,6 +229,7 @@ class frontend_model_news extends frontend_db_news {
      * @param array $current
      * @param bool $override
      * @return array|null
+     * @throws Exception
      */
     public function getData($custom,$current,$override = false)
     {
@@ -422,4 +467,3 @@ class frontend_model_news extends frontend_db_news {
         return $data;
     }
 }
-?>

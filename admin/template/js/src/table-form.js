@@ -29,20 +29,36 @@ var tableForm = (function ($, undefined) {
      */
     return {
         // Public Functions
-        run: function (controller) {
+        run: function (controller,offset) {
+            if(typeof offset === 'undefined') offset = null;
             // Initialization of the multi-select checkboxes
             initCheckboxSelect();
 
             $.each($( ".ui-sortable" ), function() {
                 $( this ).sortable({
+                    containment: $(this).parent(),
                     items: "> tr",
-                    cursor: "move",
+                    handle: ".sort-handle",
+                    cursor: "ns-resize",
                     axis: "y",
+                    opacity: 0.5,
+                    placeholder: "tr-placeholder",
+                    helper: function(e, tr)
+                    {
+                        var $originals = tr.children();
+                        var $helper = tr.clone();
+                        $helper.children().each(function(index)
+                        {
+                            // Set helper cell sizes to match the original sizes
+                            $(this).width($originals.eq(index).width());
+                        });
+                        return $helper;
+                    },
                     update: function(){
                         let serial = $( this ).sortable('serialize');
                         $.jmRequest({
                             handler: "ajax",
-                            url: controller+'&action=order',
+                            url: controller+'&action=order'+(offset !== null ? '&offset='+offset : ''),
                             method: 'POST',
                             data : serial,
                             success:function(e){

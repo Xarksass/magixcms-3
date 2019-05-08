@@ -27,6 +27,9 @@ class backend_db_about
 				case 'op':
 					$sql = "SELECT `day_abbr`,`open_day`,`noon_time`,`open_time`,`close_time`,`noon_start`,`noon_end` FROM `mc_about_op`";
 					break;
+				case 'op_content':
+					$sql = "SELECT * FROM `mc_about_op_content`";
+					break;
 				case 'languages':
 					$sql = "SELECT `name_lang` FROM `mc_lang`";
 					break;
@@ -41,21 +44,28 @@ class backend_db_about
 							WHERE p.id_pages = :edit';
 					break;
 				case 'pages':
+					$limit = '';
+					if($config['offset']) {
+						$limit = ' LIMIT 0, '.$config['offset'];
+						if(isset($config['page']) && $config['page'] > 1) {
+							$limit = ' LIMIT '.(($config['page'] - 1) * $config['offset']).', '.$config['offset'];
+						}
+					}
+
 					$sql = "SELECT p.id_pages, c.name_pages, c.resume_pages, c.content_pages, c.seo_title_pages, c.seo_desc_pages, p.menu_pages, p.date_register
 							FROM mc_about_page AS p
 								JOIN mc_about_page_content AS c USING ( id_pages )
 								JOIN mc_lang AS lang ON ( c.id_lang = lang.id_lang )
 								WHERE c.id_lang = :default_lang AND p.id_parent IS NULL 
 								GROUP BY p.id_pages 
-							ORDER BY p.order_pages";
+							ORDER BY p.order_pages".$limit;
 
 					if(isset($config['search'])) {
 						$cond = '';
-						$config['search'] = array_filter($config['search']);
 						if (is_array($config['search']) && !empty($config['search'])) {
 							$nbc = 0;
 							foreach ($config['search'] as $key => $q) {
-								if ($q != '') {
+								if ($q !== '') {
 									$cond .= 'AND ';
 									$p = 'p'.$nbc;
 									switch ($key) {
@@ -90,7 +100,7 @@ class backend_db_about
 										LEFT JOIN mc_about_page_content AS ca ON ( pa.id_pages = ca.id_pages ) 
 										WHERE c.id_lang = :default_lang $cond
 										GROUP BY p.id_pages 
-									ORDER BY p.order_pages";
+									ORDER BY p.order_pages".$limit;
 						}
 					}
 					break;
@@ -99,7 +109,7 @@ class backend_db_about
 					if(isset($config['search']) && is_array($config['search']) && !empty($config['search'])) {
 						$nbc = 0;
 						foreach ($config['search'] as $key => $q) {
-							if($q != '') {
+							if($q !== '') {
 								$cond .= 'AND ';
 								$p = 'p'.$nbc;
 								switch ($key) {
@@ -160,6 +170,9 @@ class backend_db_about
 				case 'root':
 					$sql = 'SELECT * FROM mc_about_page ORDER BY id_pages DESC LIMIT 0,1';
 					break;
+				case 'close_txt':
+					$sql = 'SELECT * FROM mc_about_op_content WHERE id_lang = :id_lang';
+					break;
 			}
 
 			return $sql ? component_routing_db::layer()->fetch($sql,$params) : null;
@@ -178,40 +191,47 @@ class backend_db_about
 		$sql = '';
 
 		if($config['context'] === 'about') {
-			if ($config['type'] === 'content') {
-				$queries = array(
-					array(
-						'request' => "SET @lang = :id_lang",
-						'params' => array('id_lang' => $params['id_lang'])
-					),
-					array(
-						'request' => "INSERT INTO `mc_about_data` (`id_lang`,`name_info`,`value_info`) VALUES
+			switch ($config['type']) {
+				case 'content':
+					$queries = array(
+						array(
+							'request' => "SET @lang = :id_lang",
+							'params' => array('id_lang' => $params['id_lang'])
+						),
+						array(
+							'request' => "INSERT INTO `mc_about_data` (`id_lang`,`name_info`,`value_info`) VALUES
 							(@lang,'desc',:dsc),(@lang,'slogan',:slogan),(@lang,'content',:content),(@lang,'seo_desc',:seo_desc),(@lang,'seo_title',:seo_title)",
-						'params' => array(
-							'dsc' => $params['desc'],
-							'slogan' => $params['slogan'],
-							'content' => $params['content'],
-							'seo_desc' => $params['seo_desc'],
-							'seo_title' => $params['seo_title']
-						)
-					),
-				);
+							'params' => array(
+								'dsc' => $params['desc'],
+								'slogan' => $params['slogan'],
+								'content' => $params['content'],
+								'seo_desc' => $params['seo_desc'],
+								'seo_title' => $params['seo_title']
+							)
+						),
+					);
 
-				try {
-					component_routing_db::layer()->transaction($queries);
-					return true;
-				}
-				catch (Exception $e) {
-					return 'Exception reçue : '.$e->getMessage();
-				}
+					try {
+						component_routing_db::layer()->transaction($queries);
+						return true;
+					}
+					catch (Exception $e) {
+						return 'Exception reçue : '.$e->getMessage();
+					}
+					break;
+				case 'close_txt':
+					$sql = 'INSERT INTO `mc_about_op_content`(id_lang,'.$params['column'].') 
+							VALUES (:id_lang,:value)';
+					unset($params['column']);
+					break;
 			}
 		}
 		elseif ($config['context'] === 'page') {
 			switch ($config['type']) {
 				case 'page':
 					$cond = $params['id_parent'] != NULL ? ' IN ('.$params['id_parent'].')' : ' IS NULL';
-					$sql = "INSERT INTO `mc_about_page`(id_parent,order_pages,date_register) 
-						SELECT :id_parent,COUNT(id_pages),NOW() FROM mc_about_page WHERE id_parent".$cond;
+					$sql = "INSERT INTO `mc_about_page`(id_parent,menu_pages,order_pages,date_register) 
+						SELECT :id_parent,:menu_pages,COUNT(id_pages),NOW() FROM mc_about_page WHERE id_parent".$cond;
 					break;
 				case 'content':
 					$sql = 'INSERT INTO `mc_about_page_content`(id_pages,id_lang,name_pages,url_pages,resume_pages,content_pages,seo_title_pages,seo_desc_pages,published_pages) 
@@ -328,6 +348,8 @@ class backend_db_about
 						'dsc' => $params['desc'],
 						'slogan' => $params['slogan'],
 						'content' => $params['content'],
+						'seo_title' => $params['seo_title'],
+						'seo_desc' => $params['seo_desc'],
 						'id_lang' => $params['id_lang']
 					);
 					break;
@@ -388,6 +410,10 @@ class backend_db_about
 					}
 					return true;
 					break;
+				case 'close_txt':
+					$sql = "UPDATE mc_about_op_content SET ".$params['column']." = :value WHERE id_content = :id";
+					unset($params['column']);
+					break;
 			}
 		}
 		elseif ($config['context'] === 'page') {
@@ -395,7 +421,8 @@ class backend_db_about
 				case 'page':
 					$sql = 'UPDATE mc_about_page 
 						SET 
-							id_parent = :id_parent
+							id_parent = :id_parent,
+						    menu_pages = :menu_pages
 						WHERE id_pages = :id_pages';
 					break;
 				case 'content':

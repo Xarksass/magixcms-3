@@ -13,6 +13,10 @@
             <![CDATA[<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.
                 Nam felis ex, blandit accumsan risus quis, eleifend mollis nisi. Mauris in augue dui.</p>]]>
         </content>
+        <seo>
+            <title>le test de canadien</title>
+            <description></description>
+        </seo>
         <tag>test</tag>
         <tag>ma cocote</tag>
         <tag>mon bizard</tag>
@@ -31,6 +35,10 @@
             <![CDATA[<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.
                 Nam felis ex, blandit accumsan risus quis, eleifend mollis nisi. Mauris in augue dui.</p>]]>
         </content>
+        <seo>
+            <title>le test de canadien</title>
+            <description></description>
+        </seo>
         <tag>tatata</tag>
         <published>0</published>
     </language>

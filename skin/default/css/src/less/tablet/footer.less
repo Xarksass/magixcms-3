@@ -1,16 +1,3 @@
-.footer-colophon {
-	> .container {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		max-width: @screen-lg-min;
-		> div {
-			padding-right: 15px;
-			padding-left: 15px;
-		}
-	}
-}
-
 #block-contact {
 	h4 + div {
 		padding: 20px 0;
@@ -35,5 +22,13 @@
 
 	#mailform {
 		padding: 15px;
+	}
+}
+
+@media (min-width: @screen-md-min) {
+	#footer {
+		.block {
+			margin-bottom: 20px;
+		}
 	}
 }

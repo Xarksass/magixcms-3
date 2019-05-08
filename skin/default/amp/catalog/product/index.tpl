@@ -1,36 +1,27 @@
 {extends file="amp/catalog/index.tpl"}
+{if !empty($product.long_name)}{$product.name = $product.long_name}{/if}
 {block name="stylesheet"}{fetch file="skin/{$theme}/amp/css/product.min.css"}{/block}
 {block name="amp-script"}
-    {if count($product.img) > 1}
+    {if count($product.imgs) > 1}
         <script async custom-element="amp-carousel" src="https://cdn.ampproject.org/v0/amp-carousel-0.1.js"></script>
         <script async custom-element="amp-lightbox" src="https://cdn.ampproject.org/v0/amp-lightbox-0.1.js"></script>
         {amp_components content=$product.content galery=false}
-    {elseif count($product.img) > 0}
+    {elseif count($product.imgs) > 0}
         <script async custom-element="amp-image-lightbox" src="https://cdn.ampproject.org/v0/amp-image-lightbox-0.1.js"></script>
         {amp_components content=$product.content image=false}
     {/if}
 {/block}
 {block name="webType"}ItemPage{/block}
 {block name='body:id'}product{/block}
-{block name="title"}{seo_rewrite conf=['level'=>'record','type'=>'title','default'=>{$product.name}] parent={$parent.name} record={$product.name}}{/block}
-{block name="description"}{seo_rewrite conf=['level'=>'record','type'=>'description','default'=>{$product.resume}] parent={$parent.name} record={$product.name}}{/block}
+{block name="title"}{$product.seo.title}{/block}
+{block name="description"}{$product.seo.description}{/block}
 {block name='article'}
     {capture name="contact"}
-        {*<form action="/{$lang}/contact/" method="get" class="interested-form">
-            <fieldset class="text-center">
-                *}{*<p class="lead">{#interested_in#} {$product.name}&thinsp;?</p>*}{*
-                <p>
-                    <input type="hidden" name="moreinfo" value="{$product.name}"/>
-                    *}{*<button id="more-info" type="submit" class="btn btn-box btn-invert btn-main-theme">{#contact_form#|ucfirst}</button>*}{*
-                    <button id="more-info" type="submit" class="btn btn-box btn-invert btn-main-theme">{#interested_in#} {$product.name}&thinsp;?</button>
-                </p>
-            </fieldset>
-        </form>*}
         <p class="text-center interested-form">
             <a href="{$url}/{$lang}/amp/contact/?moreinfo={$product.name}" class="btn btn-box btn-invert btn-main-theme">{#interested_in#} {$product.name}&thinsp;?</a>
         </p>
     {/capture}
-    <article class="catalog container" itemprop="mainEntity" itemscope itemtype="http://schema.org/Series">
+    <article class="catalog container" itemprop="mainEntity" itemscope itemtype="http://schema.org/Product">
         {block name='article:content'}
             <header>
                 <h1 itemprop="name">{$product.name}</h1>
@@ -43,21 +34,31 @@
                 <meta itemprop="name" content="{$parent.name}">
                 <meta itemprop="url" content="{$parent.url}">
             </div>
-            {if count($product.img) > 1}
+            {if count($product.imgs) > 1}
             <div id="gallery">
                 <amp-carousel id="carousel-with-preview"
-                              width="1000"
-                              height="618"
+                              width="{$product.imgs[0].img.medium['w']}"
+                              height="{$product.imgs[0].img.medium['h']}"
                               layout="responsive"
-                              type="slides">
-                    {foreach $product.img as $img}
+                              type="slides" controls loop>
+                    {foreach $product.imgs as $img}
                     <button on="tap:lightbox-gallery,carousel.goToSlide(index={$img@index})">
                         <i class="material-icons">fullscreen</i>
-                        <amp-img src="{$url}{$img.imgSrc.large}"
-                                 width="1000"
-                                 height="618"
+                        <amp-img src="{$img.img.medium['src_webp']}"
+                                 width="{$img.img.medium['w']}"
+                                 height="{$img.img.medium['h']}"
                                  layout="responsive"
-                                 alt="{$product.name}"></amp-img>
+                                 alt="{$img.img.alt}"
+                                 title="{$img.img.title}">
+                            <amp-img alt="{$img.img.alt}"
+                                     fallback
+                                     title="{$img.img.title}"
+                                     src="{$img.img.medium['src']}"
+                                     width="{$img.img.medium['w']}"
+                                     height="{$img.img.medium['h']}"
+                                     layout="responsive">
+                            </amp-img>
+                        </amp-img>
                     </button>
                     {/foreach}
                 </amp-carousel>
@@ -65,30 +66,67 @@
                               width="auto"
                               height="78"
                               layout="fixed-height"
-                              type="carousel">
-                    {foreach $product.img as $img}
+                              type="carousel" controls>
+                    {foreach $product.imgs as $img}
                     <button on="tap:carousel-with-preview.goToSlide(index={$img@index})">
-                        <amp-img src="{$url}{$img.imgSrc.small}"
+                        {*<amp-img src="{$url}{$img.img.small.src}"
                                  width="125"
                                  height="78"
                                  layout="fixed"
-                                 alt="{$product.name}"></amp-img>
+                                 alt="{$product.name}"></amp-img>*}
+                        <amp-img src="{$img.img.small['src_webp']}"
+                                 width="125"
+                                 height="78"
+                                 layout="fixed"
+                                 alt="{$img.img.alt}"
+                                 title="{$img.img.title}">
+                            <amp-img alt="{$img.img.alt}"
+                                     fallback
+                                     title="{$img.img.title}"
+                                     src="{$img.img.small['src']}"
+                                     width="125"
+                                     height="78"
+                                     layout="fixed">
+                            </amp-img>
+                        </amp-img>
                     </button>
                     {/foreach}
                 </amp-carousel>
                 <amp-lightbox id="lightbox-gallery" layout="nodisplay">
                     <div class="lightbox">
                         <amp-carousel id="carousel" layout="fill" type="slides">
-                            {foreach $product.img as $img}
+                            {foreach $product.imgs as $img}
                             <figure class="amp-carousel-slide">
-                                <amp-img on="tap:lightbox-gallery.close"
+                                {*<amp-img on="tap:lightbox-gallery.close"
                                          role="button"
                                          tabindex="0"
-                                         src="{$url}{$img.imgSrc.large}"
+                                         src="{$url}{$img.img.large.src}"
                                          layout="responsive"
                                          height="618"
                                          width="1000"
-                                         itemprop="image"></amp-img>
+                                         itemprop="image"></amp-img>*}
+                                <amp-img on="tap:lightbox-gallery.close"
+                                         role="button"
+                                         tabindex="0"
+                                         src="{$img.img.large['src_webp']}"
+                                         width="{$img.img.large['w']}"
+                                         height="{$img.img.large['h']}"
+                                         layout="responsive"
+                                         alt="{$img.img.alt}"
+                                         title="{$img.img.title}"
+                                         itemprop="image">
+                                    <amp-img on="tap:lightbox-gallery.close"
+                                             role="button"
+                                             tabindex="0"
+                                             alt="{$img.img.alt}"
+                                             fallback
+                                             title="{$img.img.title}"
+                                             src="{$img.img.large['src']}"
+                                             width="{$img.img.large['w']}"
+                                             height="{$img.img.large['h']}"
+                                             layout="responsive">
+                                    </amp-img>
+                                </amp-img>
                                 <figcaption>{$product.name}</figcaption>
                             </figure>
                             {/foreach}
@@ -97,20 +135,42 @@
                     </div>
                 </amp-lightbox>
             </div>
-            {elseif count($product.img) > 0}
-            {$img = $product.img[0]}
+            {elseif count($product.imgs) > 0}
+            {$img = $product.imgs[0]}
             <figure>
-                <amp-img on="tap:lightbox1"
+                {*<amp-img on="tap:lightbox1"
                          role="button"
                          tabindex="0"
-                         src="{$img.imgSrc.large}"
+                         src="{$img.img.large.src}"
                          alt="{$product.name}"
                          title="{$product.name}"
                          layout="responsive"
                          width="1000"
                          height="618"
-                         itemprop="image"></amp-img>
-                <figcaption class="hidden">{$pages.name}</figcaption>
+                         itemprop="image"></amp-img>*}
+                <amp-img on="tap:lightbox1"
+                         role="button"
+                         tabindex="0"
+                         src="{$img.img.large['src_webp']}"
+                         width="{$img.img.large['w']}"
+                         height="{$img.img.large['h']}"
+                         layout="responsive"
+                         alt="{$img.img.alt}"
+                         title="{$img.img.title}"
+                         itemprop="image">
+                    <amp-img on="tap:lightbox1"
+                             role="button"
+                             tabindex="0"
+                             alt="{$img.img.alt}"
+                             fallback
+                             title="{$img.img.title}"
+                             src="{$img.img.large['src']}"
+                             width="{$img.img.large['w']}"
+                             height="{$img.img.large['h']}"
+                             layout="responsive">
+                    </amp-img>
+                </amp-img>
+                <figcaption class="hidden">{$product.name}</figcaption>
             </figure>
             <amp-image-lightbox id="lightbox1" layout="nodisplay"></amp-image-lightbox>
             {/if}
@@ -124,7 +184,7 @@
                 <h3>{#similar_products#|ucfirst}</h3>
                 <div class="vignette-list">
                     <div class="section-block">
-                        <div class="row row-center">
+                        <div class="row row-center" itemprop="mainEntity" itemscope itemtype="http://schema.org/ItemList">
                             {include file="amp/catalog/loop/product.tpl" data=$product.associated classCol='vignette col-12 col-xs-6 col-md-4'}
                         </div>
                     </div>

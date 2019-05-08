@@ -17,7 +17,7 @@
 {switch $smarty.get.controller}
 {case 'about'}
 {* About *}
-{if $root.name === ''}{$root.name = {#catalog#}}{/if}
+{if $root.name === ''}{$root.name = {#about#}}{/if}
 {* Root *}
 {if $smarty.get.id}
     {$bread[] = ['name' => {$root.name},'url' => "{$url}/{$lang}/{if $amp}amp/{/if}about/",'title' => {$root.name}]}
@@ -30,11 +30,11 @@
 {* Pages *}
 {* Parent *}
 {if $pages.id_parent}
-    {$bread[] = ['name' => {$parent.title},'url' => "{$url}{$parent.url}",'title' => "{#show_page#}: {$parent.title}"]}
+    {$bread[] = ['name' => {$parent.name},'url' => "{$url}{$parent.url}",'title' => "{#show_page#}: {$parent.name}"]}
 {/if}
 {* /Parent *}
 {if $smarty.get.id}
-    {$bread[] = ['name' => {$pages.title}]}
+    {$bread[] = ['name' => {$pages.name}]}
 {/if}
 {* /Pages *}
 
@@ -95,7 +95,7 @@
 
 {* Topicality *}
 {if $smarty.get.id}
-    {$bread[] = ['name' => {$news.title}]}
+    {$bread[] = ['name' => {$news.name}]}
 {/if}
 {* /Topicality *}
 {* /News *}

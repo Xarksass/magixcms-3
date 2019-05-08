@@ -30,14 +30,14 @@
 		text-align: center;
 		position: absolute;
 		width: ~"calc(100% - 31px)";
-		bottom: 31px;
+		bottom: 38px;
 	}
 
 	.make-default {
 		text-align: center;
 		position: absolute;
 		width: ~"calc(100% - 31px)";
-		bottom: 31px;
+		bottom: 38px;
 
 		a {
 			display: block;
@@ -65,7 +65,13 @@
 			margin: 0;
 
 			&:after {
-				.fa;
+				font-weight: 400;
+				-moz-osx-font-smoothing: grayscale;
+				-webkit-font-smoothing: antialiased;
+				font-style: normal;
+				font-variant: normal;
+				text-rendering: auto;
+				line-height: 1;
 				color: #eee;
 				content: '@{fa-var-square}';
 				font-size: 40px;
@@ -79,6 +85,7 @@
 				justify-content: center;
 				align-items: center;
 				opacity: 0;
+				font-family: 'Font Awesome 5 Free';
 				.auto-transition(.4s);
 			}
 
@@ -89,7 +96,7 @@
 
 		&:hover {
 			.make-default {
-				bottom: 31px;
+				bottom: 38px;
 			}
 		}
 	}
@@ -152,17 +159,47 @@ form > .actions {
 	line-height: 110px;
 	font-size: 20px;
 	color: rgba(0,0,0,.3);
+
+	&.img-drop {
+		padding-top: ~"calc(100% / 1.618)";
+		border-width: 1px;
+		margin-bottom: 20px;
+		border-radius: 0;
+
+		&:not(.no-img) {
+			#drop-buttons {
+				opacity: 0;
+			}
+
+			&:hover {
+				#drop-buttons {
+					opacity: 1;
+				}
+			}
+		}
+	}
 }
 
-#img_multiple {
+#img,
+#img_multiple,
+.input-img{
 	/*Important*/
 	position: absolute;
 	/*Important*/
 	cursor: pointer;
-	left: 0px;
-	top: 0px;
+	left: 0;
+	top: 0;
 	//Important This is only comment out for demonstration purposes.
 	opacity:0;
+}
+
+.preview-img {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	max-height: 100%;
+	overflow: hidden;
 }
 
 /*Important*/
@@ -171,7 +208,6 @@ form > .actions {
 	color: rgba(0,0,0,.5);
 }
 
-
 /*If you dont want the button*/
 #drop-buttons {
 	position: absolute;
@@ -179,8 +215,12 @@ form > .actions {
 	left: 50%;
 	top: 50%;
 	margin-top: 20px;
-	.translate(-50%,-50%);
+	-webkit-transform: translate(-50%, -50%);
+	-ms-transform: translate(-50%, -50%); /* IE9 only */
+	-o-transform: translate(-50%, -50%);
+	transform: translate(-50%, -50%);
 	line-height: 1;
+	z-index: 1;
 	/*line-height: 26px;
 	color: white;
 	font-size: 12px;
@@ -251,8 +291,16 @@ form > .actions {
 				position: relative;
 
 				&:before {
+					font-family: 'Font Awesome 5 Free';
+					font-weight: 400;
 					left: 0;
-					.fa;
+					-moz-osx-font-smoothing: grayscale;
+					-webkit-font-smoothing: antialiased;
+					display: inline-block;
+					font-style: normal;
+					font-variant: normal;
+					text-rendering: auto;
+					line-height: 1;
 					color: #555;
 					padding: 3px;
 				}
@@ -287,6 +335,7 @@ form > .actions {
 					&:before {
 						content: "@{fa-var-check}";
 						padding: 2px;
+						font-weight: 900;
 					}
 				}
 			}

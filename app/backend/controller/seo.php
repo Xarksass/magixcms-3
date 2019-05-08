@@ -94,7 +94,7 @@ class backend_controller_seo extends backend_db_seo {
         $arr = array();
 
         foreach ($data as $page) {
-            if (!array_key_exists($page['id_pages'], $arr)) {
+            if (!array_key_exists($page['id_seo'], $arr)) {
                 $arr[$page['id_seo']] = array();
                 $arr[$page['id_seo']]['id_seo'] = $page['id_seo'];
                 $arr[$page['id_seo']]['level_seo'] = $page['level_seo'];
@@ -283,13 +283,14 @@ class backend_controller_seo extends backend_db_seo {
 
             $assign = array(
                 'id_seo',
-                'attribute_seo' => ['title' => 'name'],
+				'content_seo',
+                'attribute_seo' => ['title' => 'module'],
                 //'content_pages' => ['class' => 'fixed-td-lg', 'type' => 'bin', 'input' => null],
                 'level_seo',
                 'type_seo'
             );
             //$this->module();
-            $this->data->getScheme(array('mc_seo','mc_seo_content'),array('id_seo','attribute_seo','level_seo','type_seo'),$assign);
+            $this->data->getScheme(array('mc_seo','mc_seo_content'),array('id_seo','content_seo','attribute_seo','level_seo','type_seo'),$assign);
             $this->template->display('seo/index.tpl');
         }
     }

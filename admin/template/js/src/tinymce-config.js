@@ -21,12 +21,12 @@
         relative_urls : false,
         entity_encoding : "raw",
         plugins: [
-            'advlist autolink lists link image charmap print preview anchor',
+            'advlist autolink lists link image lazyloadimage charmap print preview anchor',
             'searchreplace visualblocks code fullscreen colorpicker textpattern wordcount directionality',
             'insertdatetime media table contextmenu paste textcolor template youtube imagetools codesample fontawesome responsivefilemanager mc_pages mc_cat mc_product mc_news'
         ],
         toolbar1: 'bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | formatselect | fontsizeselect | forecolor backcolor',
-        toolbar2: 'cut copy paste | searchreplace | bullist numlist | outdent indent blockquote | charmap | undo redo | responsivefilemanager image media | link unlink anchor',
+        toolbar2: 'cut copy paste | searchreplace | bullist numlist | outdent indent blockquote | charmap | undo redo | responsivefilemanager image media lazyloadimage | link unlink anchor',
         toolbar3: 'table | hr removeformat | fullscreen | visualblocks | loremipsum | inserttime | styleselect | template | youtube | fontawesome codesample | code preview | mc_pages mc_cat mc_product mc_news',
         imagetools_toolbar: "imageoptions",
         menubar: false,
@@ -51,7 +51,7 @@
             });
         },
         min_height: 250,
-        image_dimensions: false,
+        image_dimensions: true,
         image_class_list: [
             {title: 'None', value: ''},
             {title: 'Image Responsive', value: 'img-responsive'},
@@ -88,7 +88,12 @@
             {text: 'Sass (Scss)', value: 'sass'}
         ],
         formats: {
-            strikethrough: {inline: 'del'}
+            underline: {inline : 'u'},
+            strikethrough: {inline: 'del'},
+            alignleft: {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes : 'text-left'},
+            aligncenter: {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes : 'text-center'},
+            alignright: {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes : 'text-right'},
+            alignjustify: {selector : 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes : 'text-justify'}
         },
         style_formats: [
             {title: 'Link', items: [
@@ -139,8 +144,7 @@
             ]},
             {title: 'Helper classes', items: [
                 {title: "Blocks", items: [
-                    {title: "Div center", block: "div", classes: 'center-block'},
-                    {title: "Div clearfix", block: "div", classes: 'clearfix'}
+                    {title: "Div center", block: "div", classes: 'center-block'}
                 ]},
                 {title: "Header", items: [
                     {title: "Title 1", selector: "h1,h2,h3,h4,h5,h6,p", classes: 'h1'},
@@ -151,7 +155,8 @@
                     {title: "Title 6", selector: "h6,h1,h2,h3,h4,h5,p", classes: 'h6'}
                 ]},
                 {title: "Alignment", items: [
-                    {title: "Text Center", selector: "p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table", classes: 'text-center'}
+                    {title: "Text Center", selector: "p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table", classes: 'text-center'},
+                    {title: "Clearfix", selector: "p,h1,h2,h3,h4,h5,h6,div,ul,ol,table", classes: 'clearfix'}
                 ]},
                 {title: "Paragraph", items: [
                     {title: "Text Center", block: "p", classes: 'text-center'},
@@ -166,6 +171,9 @@
                     {title: "Bg Info", block: "p", classes: 'bg-info'},
                     {title: "Bg Warning", block: "p", classes: 'bg-warning'},
                     {title: "Bg Danger", block: "p", classes: 'bg-danger'}
+                ]},
+                {title: "List", items: [
+                    {title: "Bullet list", block: "ul", classes: 'bullet-list'}
                 ]}
             ]},
             {title: 'Alert', items: [
@@ -196,7 +204,8 @@
         template_popup_width: 800,
         language : tinyLanguage,
         schema: "html5",
-        extended_valid_elements: "span[*],+span[*],+iframe[src|width|height|name|align|class],+strong[*]",
+        extended_valid_elements: "+svg[*],+g[*],+path[*],+span[*],+iframe[src|width|height|name|align|class],+strong[*]",
+        //verify_html: false,
         //end_container_on_empty_block: false,
         /*fix_list_elements : true*/
         content_css : content_css

@@ -84,7 +84,8 @@ class backend_controller_plugins extends backend_db_plugins{
 				$newsItems[]=$plugin;
             }
         }
-		component_format_array::array_sortBy('title', $newsItems);
+        $coreComponent = new component_format_array();
+        $coreComponent->array_sortBy('title', $newsItems);
         return $newsItems;
     }
 
@@ -99,6 +100,23 @@ class backend_controller_plugins extends backend_db_plugins{
         if(file_exists($files)){
             $routingDB->setupSQL($files);
         }
+    }
+
+	/**
+	 * set SQL Process Uninstall
+	 * @param $id
+	 * @return bool
+	 * @throws Exception
+	 */
+    private function unsetSQLProcess($id){
+        $routingDB = new component_routing_db();
+        $files = component_core_system::basePath().'plugins'.DIRECTORY_SEPARATOR.$id.DIRECTORY_SEPARATOR.'sql'.DIRECTORY_SEPARATOR.'uninstall.sql';
+        if(file_exists($files)){
+            $routingDB->setupSQL($files);
+			parent::delete(array('type'=>'unregister'),array('id'=>$id));
+			return true;
+        }
+        return false;
     }
 
     /**
@@ -125,6 +143,26 @@ class backend_controller_plugins extends backend_db_plugins{
                 }
             }
         }
+    }
+
+    /**
+     * Register Plugin
+     * @param $id
+     * @throws Exception
+     */
+    public function unregister($id){
+        $data = parent::fetchData(array('context'=>'one','type'=>'register'),array(':id'=>$id));
+        if($data['id_plugins'] != null){
+            if($this->unsetSQLProcess($id))
+            	$msg = 'uninstall_success';
+            else
+				$msg = 'uninstall_error';
+        }else{
+			$msg = 'uninstall_empty';
+        }
+
+		$this->message->getNotify($msg,array('method'=>'fetch','assignFetch'=>'message'));
+		$this->template->display('plugins/uninstall.tpl');
     }
 
     /**
@@ -185,6 +223,29 @@ class backend_controller_plugins extends backend_db_plugins{
         return $arr;
     }
 
+	/**
+	 * @param $fh
+	 * @param $data
+	 */
+	private function writeConfig($fh, $data)
+	{
+		foreach ($data as $key => $value) {
+			if(is_array($value)) {
+				$sec = '###';
+				fwrite($fh, "{$sec} {$key}" . PHP_EOL);
+
+				foreach ($value as $k => $v) {
+					// Write to the file.
+					fwrite($fh, "{$k} = {$v}" . PHP_EOL);
+				}
+			}
+			else {
+				// Write to the file.
+				fwrite($fh, "{$key} = {$value}" . PHP_EOL);
+			}
+		}
+	}
+
     /**
      * save config files
      */
@@ -203,38 +264,41 @@ class backend_controller_plugins extends backend_db_plugins{
                 $fh = fopen($baseConfigPath, 'w');
                 // Loop through the data.
                 if(isset($this->config[$lang['iso_lang']])) {
-                    foreach ($this->config[$lang['iso_lang']] as $key => $value) {
+					$this->writeConfig($fh, $this->config[$lang['iso_lang']]);
+                    /*foreach ($this->config[$lang['iso_lang']] as $key => $value) {
                         // If a value exists that should replace the current one, use it.
                         //if ( ! empty($replace_with[$key]) )
                         //$value = $replace_with[$key];
 
                         // Write to the file.
                         fwrite($fh, "{$key} = {$value}" . PHP_EOL);
-                    }
+                    }*/
 
                 }else{
-                    foreach ( $newData as $key => $value ){
+					$this->writeConfig($fh, $newData);
+                    /*foreach ( $newData as $key => $value ){
                         // If a value exists that should replace the current one, use it.
                         //if ( ! empty($replace_with[$key]) )
                         //$value = $replace_with[$key];
 
                         // Write to the file.
                         fwrite($fh, "{$key} = {$value}" . PHP_EOL);
-                    }
+                    }*/
                 }
                 // Close the file handle.
                 fclose($fh);
             }else{
                 $fh = fopen($baseConfigPath, 'w');
-                // Loop through the data.
-                foreach ( $newData as $key => $value ){
+                // Loop through the data
+				$this->writeConfig($fh, $newData);
+                /*foreach ( $newData as $key => $value ){
                     // If a value exists that should replace the current one, use it.
                     //if ( ! empty($replace_with[$key]) )
                     //$value = $replace_with[$key];
 
                     // Write to the file.
                     fwrite($fh, "{$key} = {$value}" . PHP_EOL);
-                }
+                }*/
                 // Close the file handle.
                 fclose($fh);
             }

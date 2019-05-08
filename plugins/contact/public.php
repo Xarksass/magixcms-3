@@ -19,7 +19,8 @@ class plugins_contact_public extends plugins_contact_db
 		$origin,
 		$modelDomain,
 		$config,
-		$settings;
+		$settings,
+		$amp_available = true;
 
 	/**
 	 * @var array
@@ -29,7 +30,7 @@ class plugins_contact_public extends plugins_contact_db
 	/**
 	 * @var string
 	 */
-    public $type;
+    public $type,$amp;
 
     /**
      * frontend_controller_home constructor.
@@ -40,15 +41,14 @@ class plugins_contact_public extends plugins_contact_db
         $this->template = $t ? $t : new frontend_model_template();
         $formClean = new form_inputEscape();
         $this->sanitize = new filter_sanitize();
-        //$this->header = new component_httpUtils_header($this->template);
 		$this->header = new http_header();
         $this->data = new frontend_model_data($this,$this->template);
-        $this->getlang = $this->template->lang;
-        //$this->mail = new mail_swift('mail');
+		$this->getlang = $this->template->lang;
         $this->mail = new frontend_model_mail('contact');
         $this->modelDomain = new frontend_model_domain($this->template);
 		$this->config = $this->getItems('config',null,'one',false);
 		$this->settings = new frontend_model_setting();
+        $this->amp = http_request::isGet('amp') ? true : false;
 
 		if (http_request::isPost('msg')) {
 			$this->msg = $formClean->arrayClean($_POST['msg']);
@@ -158,27 +158,6 @@ class plugins_contact_public extends plugins_contact_db
 	}
 
 	/**
-	 * @access private
-	 * setBodyMail
-	 */
-	/*private function setBodyMail($debug) {
-        if($debug) {
-            $data = array(
-                'lastname' => "My Name",
-                'firstname' => "My Firstname",
-                'email' => $this->testmail,
-                'phone' => "+32 08080808",
-                'title' => "Test Mail",
-                'content' => "My test mail"
-            );
-        }
-        else {
-			$data = $this->msg;
-        }
-		return $data;
-    }*/
-
-	/**
 	 * @param bool $error
 	 * @return string
 	 */
@@ -203,34 +182,9 @@ class plugins_contact_public extends plugins_contact_db
 	}
 
 	/**
-	 * @param string $tpl
-	 * @param bool $debug
-	 * @return string
-	 * @throws Exception
-	 */
-	/*private function getBodyMail($tpl = 'admin', $debug = false){
-		$cssInliner = $this->settings->getSetting('css_inliner');
-		$this->template->assign('getDataCSSIColor',$this->settings->fetchCSSIColor());
-		$this->template->assign('data',$this->setBodyMail($debug));
-
-		$bodyMail = $this->template->fetch('contact/mail/'.$tpl.'.tpl');
-		if ($cssInliner['value']) {
-			$bodyMail = $this->mail->plugin_css_inliner($bodyMail,array(component_core_system::basePath().'skin/'.$this->template->themeSelected().'/contact/css' => 'foundation-emails.css'));
-		}
-
-		if($debug) {
-			print $bodyMail;
-		}
-		else {
-			return $bodyMail;
-		}
-	}*/
-
-	/**
 	 * @return array
 	 */
 	public function getContact(){
-		//$lang = $this->template->getLanguage();
 		return $this->getItems('contacts',array('lang' => $this->getlang),'all',false);
 	}
 
@@ -266,14 +220,6 @@ class plugins_contact_public extends plugins_contact_db
 							$sender = '';
 						}
 						foreach ($contacts as $recipient) {
-							/*$message = $this->mail->body_mail(
-								self::setTitleMail($error),
-								array($this->msg['email']),
-								array($recipient['mail_contact']),
-								self::getBodyMail($tpl),
-								false
-							);
-							$isSend = $this->mail->batch_send_mail($message);*/
 							$isSend = $this->mail->send_email($recipient['mail_contact'],$tpl,$this->msg,$this->setTitleMail($error),$sender);
 							if(!$send) $send = $isSend;
 						}
@@ -290,17 +236,52 @@ class plugins_contact_public extends plugins_contact_db
 		}
 	}
 
+	public function getContactConf()
+	{
+		$config = array();
+
+		$config['address_enabled'] = $this->config['address_enabled'];
+		$config['address_required'] = $this->config['address_required'];
+
+        if(class_exists('plugins_recaptcha_public') && $this->amp == false){
+            $recaptcha = new plugins_recaptcha_public();
+            $recaptchaData = $recaptcha->setItemData();
+            if($recaptchaData['published'] == 1) {
+                $config['recaptcha'] = $recaptchaData;
+            }
+        }
+
+        return $config;
+	}
+
     /**
      *
      */
     public function run(){
+        if(class_exists('plugins_recaptcha_public') && $this->amp == false){
+            $recaptcha = new plugins_recaptcha_public();
+            $recaptchaData = $recaptcha->setItemData();
+            if($recaptchaData['published'] == 1) {
+                $this->template->assign('recaptcha', $recaptchaData);
+            }
+        }
         if(isset($this->msg)) {
-        	$this->send_email();
+
+            if(class_exists('plugins_recaptcha_public') && $this->amp == false){
+                if($recaptchaData['published'] == 1) {
+                    if ($recaptcha->getRecaptcha() == true) {
+                        $this->send_email();
+                    }
+                }else{
+                    $this->send_email();
+                }
+            }else{
+                $this->send_email();
+            }
 		}
 		else {
         	if(isset($this->moreinfo)) $this->template->assign('title',$this->moreinfo);
-        	$this->template->assign('address_enabled',$this->config['address_enabled']);
-        	$this->template->assign('address_required',$this->config['address_required']);
+            $this->template->assign('contact',$this->getContactConf());
 			$this->template->display('contact/index.tpl');
 		}
     }
@@ -321,10 +302,19 @@ class plugins_contact_public extends plugins_contact_db
             $this->template->configLoad();
 
 			return array(array(
+				'controller' => 'gmap',
 				'name' => $this->template->getConfigVars('gmap'),
 				'title' => $this->template->getConfigVars('gmap'),
 				'url' => '/'.$iso.'/gmap/'
 			));
 		}
+    }
+
+	/**
+	 * @return object
+	 */
+	public function is_amp()
+	{
+		return $this->amp_available;
     }
 }

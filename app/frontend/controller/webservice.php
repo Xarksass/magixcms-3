@@ -6,11 +6,12 @@ class frontend_controller_webservice extends frontend_db_webservice{
     protected $template,$UtilsHeader, $header, $data, $modelNews, $modelCore, $dateFormat, $xml, $message;
     protected $DBPages, $DBNews, $DBCatalog, $DBHome,$DBCategory,$DBProduct;
     protected $modelPages,$upload,$imagesComponent, $routingUrl, $buildCollection,$ws,$collectionLanguage,$collectionDomain;
-    public $collection, $retrieve, $id, $filter ,$sort, $url, $img, $imgData;
+    public $collection, $retrieve, $id, $filter ,$sort, $url, $img, $img_multiple, $imgData;
 
     /**
-	 * @param stdClass $t
-     * frontend_controller_pages constructor.
+     * frontend_controller_webservice constructor.
+     * @param null $t
+     * @throws Exception
      */
     public function __construct($t = null){
 		$this->template = $t ? $t : new frontend_model_template();
@@ -58,6 +59,8 @@ class frontend_controller_webservice extends frontend_db_webservice{
         if(isset($_FILES['img']["name"])){
             $this->img = http_url::clean($_FILES['img']["name"]);
         }
+        // --- MultiImage Upload
+        if (isset($_FILES['img_multiple']["name"])) $this->img_multiple = ($_FILES['img_multiple']["name"]);
 
         if (http_request::isPost('data')) {
             $this->imgData = array();
@@ -100,7 +103,7 @@ class frontend_controller_webservice extends frontend_db_webservice{
      * Global Root
      */
     private function getBuildRootData(){
-        $data = array('languages','home','pages','news','catalog');
+        $data = array('domain','languages','home','pages','news','catalog');
         $this->xml->newStartElement('modules');
         foreach($data as $key) {
             $this->xml->setElement(
@@ -245,7 +248,7 @@ class frontend_controller_webservice extends frontend_db_webservice{
             );
             $this->xml->setElement(
                 array(
-                    'start' => 'description',
+                    'start' => 'content',
                     'cData' => $key['content_page']
                 )
             );
@@ -523,7 +526,7 @@ class frontend_controller_webservice extends frontend_db_webservice{
 
         $arr = $this->buildCollection->getBuildNews($collection);
         //
-       /* print '<pre>';
+       /*print '<pre>';
         print_r($arr);
         print '</pre>';*/
 
@@ -616,19 +619,21 @@ class frontend_controller_webservice extends frontend_db_webservice{
                 );
                 // Start tags
                 $this->xml->newStartElement('tags');
-                foreach($item['tags'] as $tags => $tag) {
-                    $this->xml->setElement(
-                        array(
-                            'start' => 'tag',
-                            'text' => $tag['name'],
-                            'attr' => array(
-                                array(
-                                    'name' => 'id',
-                                    'content' => $tag['id']
+                if(is_array($item['tags'])) {
+                    foreach ($item['tags'] as $tags => $tag) {
+                        $this->xml->setElement(
+                            array(
+                                'start' => 'tag',
+                                'text' => $tag['name'],
+                                'attr' => array(
+                                    array(
+                                        'name' => 'id',
+                                        'content' => $tag['id']
+                                    )
                                 )
                             )
-                        )
-                    );
+                        );
+                    }
                 }
                 // END tags
                 $this->xml->newEndElement();
@@ -737,6 +742,22 @@ class frontend_controller_webservice extends frontend_db_webservice{
                         'cData' => $item['content_news']
                     )
                 );
+                // Start SEO
+                $this->xml->newStartElement('seo');
+                $this->xml->setElement(
+                    array(
+                        'start' => 'title',
+                        'text' => $item['seo_title_news']
+                    )
+                );
+                $this->xml->setElement(
+                    array(
+                        'start' => 'description',
+                        'text' => $item['seo_desc_news']
+                    )
+                );
+                //End SEO
+                $this->xml->newEndElement();
                 $this->xml->setElement(
                     array(
                         'start' => 'date_publish',
@@ -749,24 +770,26 @@ class frontend_controller_webservice extends frontend_db_webservice{
                         'text' => $item['published_news']
                     )
                 );
-                // Start tags
-                $this->xml->newStartElement('tags');
-                foreach($item['tags'] as $tags => $tag) {
-                    $this->xml->setElement(
-                        array(
-                            'start' => 'tag',
-                            'text' => $tag['name'],
-                            'attr' => array(
-                                array(
-                                    'name' => 'id',
-                                    'content' => $tag['id']
+                if(is_array($item['tags'])) {
+                    // Start tags
+                    $this->xml->newStartElement('tags');
+                    foreach ($item['tags'] as $tags => $tag) {
+                        $this->xml->setElement(
+                            array(
+                                'start' => 'tag',
+                                'text' => $tag['name'],
+                                'attr' => array(
+                                    array(
+                                        'name' => 'id',
+                                        'content' => $tag['id']
+                                    )
                                 )
                             )
-                        )
-                    );
+                        );
+                    }
+                    // END tags
+                    $this->xml->newEndElement();
                 }
-                // END tags
-                $this->xml->newEndElement();
                 //End Language
                 $this->xml->newEndElement();
             }
@@ -796,6 +819,7 @@ class frontend_controller_webservice extends frontend_db_webservice{
                 $collection[$item['id_lang']]['default_lang'] = $item['default_lang'];
             }
         }
+
         $this->xml->newStartElement('pages');
         if($collectionData != null) {
             foreach ($collection as $key) {
@@ -831,6 +855,22 @@ class frontend_controller_webservice extends frontend_db_webservice{
                         'cData' => $key['content']
                     )
                 );
+                // Start SEO
+                $this->xml->newStartElement('seo');
+                $this->xml->setElement(
+                    array(
+                        'start' => 'title',
+                        'text' => $key['seo_title']
+                    )
+                );
+                $this->xml->setElement(
+                    array(
+                        'start' => 'description',
+                        'text' => $key['seo_desc']
+                    )
+                );
+                //End SEO
+                $this->xml->newEndElement();
                 $this->xml->newEndElement();
             }
         }
@@ -843,8 +883,8 @@ class frontend_controller_webservice extends frontend_db_webservice{
      */
     private function getBuildCategoryItems()
     {
-        $collection = $this->DBCatalog->fetchData(
-            array('context' => 'all', 'type' => 'category', 'conditions' => null)
+        $collection = $this->DBCategory->fetchData(
+            array('context' => 'all', 'type' => 'pages', 'conditions' => null)
         );
 
         $arr = $this->buildCollection->getBuildCategory($collection);
@@ -1054,6 +1094,22 @@ class frontend_controller_webservice extends frontend_db_webservice{
                         'cData' => $item['content_cat']
                     )
                 );
+                // Start SEO
+                $this->xml->newStartElement('seo');
+                $this->xml->setElement(
+                    array(
+                        'start' => 'title',
+                        'text' => $item['seo_title_cat']
+                    )
+                );
+                $this->xml->setElement(
+                    array(
+                        'start' => 'description',
+                        'text' => $item['seo_desc_cat']
+                    )
+                );
+                //End SEO
+                $this->xml->newEndElement();
                 // End language loop
                 $this->xml->newEndElement();
             }
@@ -1066,8 +1122,8 @@ class frontend_controller_webservice extends frontend_db_webservice{
 
     }
     public function getBuildProductItems(){
-        $collection = $this->DBCatalog->fetchData(
-            array('context' => 'all', 'type' => 'product_ws','conditions'=>null)
+        $collection = $this->DBProduct->fetchData(
+            array('context' => 'all', 'type' => 'pages','conditions'=>null)
         );
 
         $arr = $this->buildCollection->getBuildProductItems($collection);
@@ -1256,8 +1312,8 @@ class frontend_controller_webservice extends frontend_db_webservice{
      *
      */
     public function getBuildProductData(){
-        $collection = $this->DBCatalog->fetchData(
-            array('context' => 'all', 'type' => 'product_ws','conditions'=>'WHERE p.id_product = :id'),
+        $collection = $this->DBProduct->fetchData(
+            array('context' => 'all', 'type' => 'pages','conditions'=>'WHERE p.id_product = :id'),
             array('id'=>$this->id)
         );
 
@@ -1377,6 +1433,12 @@ class frontend_controller_webservice extends frontend_db_webservice{
                                     'text' => $imgData['title_img']
                                 )
                             );
+                            $this->xml->setElement(
+                                array(
+                                    'start' => 'caption',
+                                    'text' => $imgData['caption_img']
+                                )
+                            );
                             //End language img
                             $this->xml->newEndElement();
                         }
@@ -1420,6 +1482,12 @@ class frontend_controller_webservice extends frontend_db_webservice{
                 );
                 $this->xml->setElement(
                     array(
+                        'start' => 'longname',
+                        'text' => $item['longname_p']
+                    )
+                );
+                $this->xml->setElement(
+                    array(
                         'start' => 'url',
                         'text' => $item['url_p']
                     )
@@ -1437,6 +1505,22 @@ class frontend_controller_webservice extends frontend_db_webservice{
                         'cData' => $item['content_p']
                     )
                 );
+                // Start SEO
+                $this->xml->newStartElement('seo');
+                $this->xml->setElement(
+                    array(
+                        'start' => 'title',
+                        'text' => $item['seo_title_p']
+                    )
+                );
+                $this->xml->setElement(
+                    array(
+                        'start' => 'description',
+                        'text' => $item['seo_desc_p']
+                    )
+                );
+                //End SEO
+                $this->xml->newEndElement();
                 // End language loop
                 $this->xml->newEndElement();
             }
@@ -1754,7 +1838,9 @@ class frontend_controller_webservice extends frontend_db_webservice{
                             'name_news'         => !is_array($content['name']) ? $content['name'] : '',
                             'url_news'          => !is_array($content['url']) ? $content['url'] : '',
                             'content_news'      => !is_array($content['content']) ? $content['content'] : '',
-                            'resume_news'       => !is_array($content['resume']) ? $content['resume'] : '',
+                            'resume_news'       => !is_array($content['resume']) ? trim($content['resume']) : '',
+                            'seo_title_news'    => !is_array($content['seo']['title']) ? $content['seo']['title'] : '',
+                            'seo_desc_news'     => !is_array($content['seo']['description']) ? $content['seo']['description'] : '',
                             'date_publish'      => $datePublish,
                             'published_news'    => $content['published']
                         );
@@ -1833,6 +1919,8 @@ class frontend_controller_webservice extends frontend_db_webservice{
                             }
                         }
                     }
+                    $this->header->set_json_headers();
+                    $this->message->json_post_response(true, null, array('id'=>$id_news));
                 }
                 break;
             case 'catalog':
@@ -1842,16 +1930,20 @@ class frontend_controller_webservice extends frontend_db_webservice{
 
                     if ($this->DBCatalog->fetchData(array('context' => 'one', 'type' => 'root'), array('id_lang' => $content['id_lang'])) != null) {
                         $this->DBCatalog->update(array('type' => 'content'), array(
-                                'name' => !is_array($content['name']) ? $content['name'] : '',
-                                'content' => !is_array($content['content']) ? $content['content'] : '',
-                                'id_lang' => $content['id_lang']
+                                'name'          => !is_array($content['name']) ? $content['name'] : '',
+                                'content'       => !is_array($content['content']) ? $content['content'] : '',
+                                'seo_title'     => !is_array($content['seo']['title']) ? $content['seo']['title'] : '',
+                                'seo_desc'      => !is_array($content['seo']['description']) ? $content['seo']['description'] : '',
+                                'id_lang'       => $content['id_lang']
                             )
                         );
                     } else {
                         $this->DBCatalog->insert(array('type' => 'newContent'), array(
-                                'name' => !is_array($content['name']) ? $content['name'] : '',
-                                'content' => !is_array($content['content']) ? $content['content'] : '',
-                                'id_lang' => $content['id_lang']
+                                'name'          => !is_array($content['name']) ? $content['name'] : '',
+                                'content'       => !is_array($content['content']) ? $content['content'] : '',
+                                'seo_title'     => !is_array($content['seo']['title']) ? $content['seo']['title'] : '',
+                                'seo_desc'      => !is_array($content['seo']['description']) ? $content['seo']['description'] : '',
+                                'id_lang'       => $content['id_lang']
                             )
                         );
                     }
@@ -1860,16 +1952,20 @@ class frontend_controller_webservice extends frontend_db_webservice{
                     foreach ($arrData['language'] as $lang => $content) {
                         if ($this->DBCatalog->fetchData(array('context' => 'one', 'type' => 'root'), array('id_lang' => $content['id_lang'])) != null) {
                             $this->DBCatalog->update(array('type' => 'content'), array(
-                                    'name' => !is_array($content['name']) ? $content['name'] : '',
-                                    'content' => !is_array($content['content']) ? $content['content'] : '',
-                                    'id_lang' => $content['id_lang']
+                                    'name'          => !is_array($content['name']) ? $content['name'] : '',
+                                    'content'       => !is_array($content['content']) ? $content['content'] : '',
+                                    'seo_title'     => !is_array($content['seo']['title']) ? $content['seo']['title'] : '',
+                                    'seo_desc'      => !is_array($content['seo']['description']) ? $content['seo']['description'] : '',
+                                    'id_lang'       => $content['id_lang']
                                 )
                             );
                         } else {
                             $this->DBCatalog->insert(array('type' => 'newContent'), array(
-                                    'name' => !is_array($content['name']) ? $content['name'] : '',
-                                    'content' => !is_array($content['content']) ? $content['content'] : '',
-                                    'id_lang' => $content['id_lang']
+                                    'name'      => !is_array($content['name']) ? $content['name'] : '',
+                                    'content'   => !is_array($content['content']) ? $content['content'] : '',
+                                    'seo_title' => !is_array($content['seo']['title']) ? $content['seo']['title'] : '',
+                                    'seo_desc'  => !is_array($content['seo']['description']) ? $content['seo']['description'] : '',
+                                    'id_lang'   => $content['id_lang']
                                 )
                             );
                         }
@@ -1915,6 +2011,8 @@ class frontend_controller_webservice extends frontend_db_webservice{
                             ) : '',
                             'resume_cat'    => !is_array($content['resume']) ? trim($content['resume']) : '',
                             'content_cat'   => !is_array($content['content']) ? $content['content'] : '',
+                            'seo_title_cat' => !is_array($content['seo']['title']) ? $content['seo']['title'] : '',
+                            'seo_desc_cat'  => !is_array($content['seo']['description']) ? $content['seo']['description'] : '',
                             'published_cat' => $content['published'],
                             'id_cat'        => $id_cat,
                             'id_lang'       => $content['id_lang']
@@ -1943,6 +2041,8 @@ class frontend_controller_webservice extends frontend_db_webservice{
                                 ) : '',
                                 'resume_cat' => !is_array($content['resume']) ? trim($content['resume']) : '',
                                 'content_cat' => !is_array($content['content']) ? $content['content'] : '',
+                                'seo_title_cat' => !is_array($content['seo']['title']) ? $content['seo']['title'] : '',
+                                'seo_desc_cat'  => !is_array($content['seo']['description']) ? $content['seo']['description'] : '',
                                 'published_cat' => $content['published'],
                                 'id_cat' => $id_cat,
                                 'id_lang' => $content['id_lang']
@@ -1963,7 +2063,7 @@ class frontend_controller_webservice extends frontend_db_webservice{
                 }
                 break;
             case 'product':
-
+                // ######### ---- Add product in category
                 if(isset($arrData['category'])){
                     if (isset($this->id)) {
                         $content = $arrData['category'];
@@ -1986,6 +2086,7 @@ class frontend_controller_webservice extends frontend_db_webservice{
                         $this->message->json_post_response(true, null);
                     }
                 }else {
+                    // ######### ---- Add Or Update product
                     if (isset($this->id)) {
                         // Regarder pour voir si l'édition et ajout fonctionne correctement, sinon ajouté paramètre id (get)
                         $fetchRootData = $this->DBProduct->fetchData(array('context'=>'one','type'=>'page'),array('id'=>$this->id));
@@ -2015,8 +2116,11 @@ class frontend_controller_webservice extends frontend_db_webservice{
                                         'cspec' => '', 'rspec' => ''
                                     )
                                 ) : '',
+                                'longname_p'    => !is_array($content['longname']) ? $content['longname'] : '',
                                 'resume_p'      => !is_array($content['resume']) ? trim($content['resume']) : '',
                                 'content_p'     => !is_array($content['content']) ? $content['content'] : '',
+                                'seo_title_p'   => !is_array($content['seo']['title']) ? $content['seo']['title'] : '',
+                                'seo_desc_p'    => !is_array($content['seo']['description']) ? $content['seo']['description'] : '',
                                 'published_p'   => $content['published'],
                                 'id_product'    => $id_product,
                                 'id_lang'       => $content['id_lang']
@@ -2042,8 +2146,11 @@ class frontend_controller_webservice extends frontend_db_webservice{
                                             'cspec' => '', 'rspec' => ''
                                         )
                                     ) : '',
+                                    'longname_p'    => !is_array($content['longname']) ? $content['longname'] : '',
                                     'resume_p'      => !is_array($content['resume']) ? trim($content['resume']) : '',
                                     'content_p'     => !is_array($content['content']) ? $content['content'] : '',
+                                    'seo_title_p' => !is_array($content['seo']['title']) ? $content['seo']['title'] : '',
+                                    'seo_desc_p'  => !is_array($content['seo']['description']) ? $content['seo']['description'] : '',
                                     'published_p'   => $content['published'],
                                     'id_product'    => $id_product,
                                     'id_lang'       => $content['id_lang']
@@ -2358,24 +2465,23 @@ class frontend_controller_webservice extends frontend_db_webservice{
 
                             if (isset($this->id)) {
 
-                                $fetchRootData = $this->DBPages->fetchData(array('context' => 'one', 'type' => 'wsEdit'), array('id' => $this->id));
+                                $defaultLanguage = $this->collectionLanguage->fetchData(array('context' => 'one', 'type' => 'default'));
+                                $page = $this->DBPages->fetchData(array('context' => 'one', 'type' => 'pageLang'), array('id' => $this->id, 'iso' => $defaultLanguage['iso_lang']));
 
-                                $resultUpload = $this->upload->setImageUpload(
-                                    'img',
-                                    array(
-                                        'name' => filter_rsa::randMicroUI(),
-                                        'edit' => $fetchRootData['img_pages'],
-                                        'prefix' => array('s_', 'm_', 'l_'),
-                                        'module_img' => 'pages',
-                                        'attribute_img' => 'page',
-                                        'original_remove' => false
-                                    ),
-                                    array(
-                                        'upload_root_dir' => 'upload/pages', //string
-                                        'upload_dir' => $this->id //string ou array
-                                    ),
-                                    false
+                                $settings = array(
+                                    'name' => $page['url_pages'],
+                                    'edit' => $page['img_pages'],
+                                    'prefix' => array('s_', 'm_', 'l_'),
+                                    'module_img' => 'pages',
+                                    'attribute_img' => 'page',
+                                    'original_remove' => false
                                 );
+                                $dirs = array(
+                                    'upload_root_dir' => 'upload/pages', //string
+                                    'upload_dir' => $this->id //string ou array
+                                );
+
+                                $resultUpload = $this->upload->setImageUpload('img', $settings, $dirs, false);
 
                                 $this->DBPages->update(
                                     array(
@@ -2439,6 +2545,40 @@ class frontend_controller_webservice extends frontend_db_webservice{
                             $arrData = json_decode(json_encode($this->parse()), true);
                             $this->getBuildSave($operations,$arrData);
                         }
+                        elseif($getContentType === 'files'){
+
+                            if (isset($this->id)) {
+
+                                $defaultLanguage = $this->collectionLanguage->fetchData(array('context' => 'one', 'type' => 'default'));
+                                $page = $this->DBNews->fetchData(array('context' => 'one', 'type' => 'pageLang'), array('id' => $this->id, 'iso' => $defaultLanguage['iso_lang']));
+
+                                $settings = array(
+                                    'name' => $page['url_news'],
+                                    'edit' => $page['img_news'],
+                                    'prefix' => array('s_', 'm_', 'l_'),
+                                    'module_img' => 'news',
+                                    'attribute_img' => 'news',
+                                    'original_remove' => false
+                                );
+                                $dirs = array(
+                                    'upload_root_dir' => 'upload/news', //string
+                                    'upload_dir' => $this->id //string ou array
+                                );
+
+                                $resultUpload = $this->upload->setImageUpload('img', $settings, $dirs, false);
+
+                                $this->DBNews->update(
+                                    array(
+                                        'type' => 'img'
+                                    ),
+                                    array(
+                                        'id_news' => $this->id,
+                                        'img_news' => $resultUpload['file']
+                                    )
+                                );
+                            }
+                        }
+
                     }elseif($this->ws->setMethod() === 'DELETE'){
                         //print_r($this->parse());
 
@@ -2510,24 +2650,23 @@ class frontend_controller_webservice extends frontend_db_webservice{
 
                             if (isset($this->id)) {
 
-                                $fetchRootData = $this->DBCategory->fetchData(array('context' => 'one', 'type' => 'wsEdit'), array('id' => $this->id));
+                                $defaultLanguage = $this->collectionLanguage->fetchData(array('context' => 'one', 'type' => 'default'));
+                                $page = $this->DBCategory->fetchData(array('context' => 'one', 'type' => 'pageLang'), array('id' => $this->id, 'iso' => $defaultLanguage['iso_lang']));
 
-                                $resultUpload = $this->upload->setImageUpload(
-                                    'img',
-                                    array(
-                                        'name' => filter_rsa::randMicroUI(),
-                                        'edit' => $fetchRootData['img_cat'],
-                                        'prefix' => array('s_', 'm_', 'l_'),
-                                        'module_img'        => 'catalog',
-                                        'attribute_img'     => 'category',
-                                        'original_remove' => false
-                                    ),
-                                    array(
-                                        'upload_root_dir' => 'upload/catalog/c', //string
-                                        'upload_dir' => $this->id //string ou array
-                                    ),
-                                    false
+                                $settings = array(
+                                    'name'              => $page['url_cat'],
+                                    'edit'              => $page['img_cat'],
+                                    'prefix'            => array('s_', 'm_', 'l_'),
+                                    'module_img'        => 'catalog',
+                                    'attribute_img'     => 'category',
+                                    'original_remove'   => false
                                 );
+                                $dirs = array(
+                                    'upload_root_dir'   => 'upload/catalog/c', //string
+                                    'upload_dir'        => $this->id //string ou array
+                                );
+
+                                $resultUpload = $this->upload->setImageUpload('img', $settings, $dirs, false);
 
                                 $this->DBCategory->update(
                                     array(
@@ -2599,27 +2738,20 @@ class frontend_controller_webservice extends frontend_db_webservice{
                         }elseif($getContentType === 'files'){
 
                             if (isset($this->id)) {
-                                $fetchRootData = $this->DBProduct->fetchData(array('context' => 'one', 'type' => 'img'), array('name_img' => $this->img));
 
-                                $imgPath = component_core_system::basePath() . 'upload/catalog/p/' . $this->id;
-                                if (file_exists($imgPath.'/'.$this->img)) {
-                                    $makeFiles = new filesystem_makefile();
-                                    $makeFiles->remove(array(
-                                        $imgPath.'/'.$this->img,
-                                        $imgPath.'/s_'.$this->img,
-                                        $imgPath.'/m_'.$this->img,
-                                        $imgPath.'/l_'.$this->img
-                                    ));
-                                }
-                                //print_r($this->imgData);
-                                $resultUpload = $this->upload->setImageUpload(
-                                    'img',
+                                $defaultLanguage = $this->collectionLanguage->fetchData(array('context' => 'one', 'type' => 'default'));
+                                $product = $this->DBProduct->fetchData(array('context' => 'one', 'type' => 'content'), array('id_product' => $this->id, 'id_lang' => $defaultLanguage['id_lang']));
+                                $newimg = $this->DBProduct->fetchData(array('context' => 'one', 'type' => 'lastImgId'));
+
+                                $resultUpload = $this->upload->setMultipleImageUpload(
+                                    'img_multiple',
                                     array(
-                                        'name' => $this->imgData['img'],
-                                        'edit' => NULL,
+                                        'name' => $product['url_p'],
+                                        'prefix_name' => $newimg['id_img'],
+                                        'prefix_increment' => true,
                                         'prefix' => array('s_', 'm_', 'l_'),
-                                        'module_img'        => 'catalog',
-                                        'attribute_img'     => 'product',
+                                        'module_img' => 'catalog',
+                                        'attribute_img' => 'product',
                                         'original_remove' => false
                                     ),
                                     array(
@@ -2628,13 +2760,26 @@ class frontend_controller_webservice extends frontend_db_webservice{
                                     ),
                                     false
                                 );
+                                if ($resultUpload != null) {
+                                    $preparePercent = 80 / count($resultUpload);
+                                    $percent = 10;
 
-                                if($fetchRootData['name_img'] == null){
-                                    $this->DBProduct->insert(array('type' => 'newImg'), array('id_product' => $this->id, 'name_img' => $this->img));
+                                    foreach ($resultUpload as $key => $value) {
+                                        if ($value['statut'] == '1') {
+                                            $percent = $percent + $preparePercent;
+
+                                            $this->DBProduct->insert(
+                                                array(
+                                                    'type' => 'newImg'
+                                                ),
+                                                array(
+                                                    'id_product' => $this->id,
+                                                    'name_img' => $value['file']
+                                                )
+                                            );
+                                        }
+                                    }
                                 }
-
-                                /*$this->header->set_json_headers();
-                                $this->message->json_post_response(true, null, array('id'=>$this->id));*/
                             }
                         }
 

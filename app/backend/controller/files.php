@@ -2,7 +2,7 @@
 class backend_controller_files extends backend_db_files{
     public $edit, $action, $tabs;
     public $id_config_img, $module_img,$attribute_img,$width_img,$height_img,$type_img,$resize_img;
-    protected $message, $template, $header, $data,$imagesComponent, $DBpages,$DBnews,$DBcategory,$DBproduct, $configCollection;
+    protected $message, $template, $header, $data,$imagesComponent, $DBpages,$DBnews,$DBcategory,$DBproduct, $configCollection,$modelPlugins;
     public $attr_name,$module_name;
 
 	/**
@@ -22,6 +22,7 @@ class backend_controller_files extends backend_db_files{
         $this->DBnews = new backend_db_news();
         $this->DBcategory = new backend_db_category();
         $this->DBproduct = new backend_db_product();
+        $this->modelPlugins = new backend_model_plugins();
 
         // --- GET
         if (http_request::isGet('edit')) {
@@ -166,7 +167,8 @@ class backend_controller_files extends backend_db_files{
                                     'module_img'        => $this->module_name,
                                     'attribute_img'     => 'page',
                                     'id'                =>'id_pages',
-                                    'img'               =>'img_pages'
+                                    'img'               =>'img_pages',
+                                    'webp'              => true
                                 ),
                                     $fetchImg
                                 );
@@ -179,7 +181,8 @@ class backend_controller_files extends backend_db_files{
                                     'module_img'        => $this->module_name,
                                     'attribute_img'     => 'news',
                                     'id'                =>'id_news',
-                                    'img'               =>'img_news'
+                                    'img'               =>'img_news',
+                                    'webp'              => true
                                 ),
                                     $fetchImg
                                 );
@@ -195,7 +198,8 @@ class backend_controller_files extends backend_db_files{
                                                 'module_img'        => $this->module_name,
                                                 'attribute_img'     => 'category',
                                                 'id'                =>'id_cat',
-                                                'img'               =>'img_cat'
+                                                'img'               =>'img_cat',
+                                                'webp'              => true
                                             ),
                                                 $fetchImg
                                             );
@@ -208,13 +212,36 @@ class backend_controller_files extends backend_db_files{
                                                 'module_img'        => $this->module_name,
                                                 'attribute_img'     => 'product',
                                                 'id'                =>'id_product',
-                                                'img'               =>'name_img'
+                                                'img'               =>'name_img',
+                                                'webp'              => true
                                             ),
                                                 $fetchImg
                                             );
                                     }
                                 }
                                 break;
+                            default:
+                                    //preg_grep('!^car_!', $array);
+                                    $plugin = 'plugins_' . $this->module_name . '_admin';
+                                    if (class_exists($plugin)) {
+                                        //Si la méthode run existe on ajoute le plugin dans le menu
+                                        if (method_exists($plugin, 'getItemsImages')) {
+                                            $class = new $plugin();
+                                            $fetchImg = $class->getItemsImages();
+                                            $this->imagesComponent->getThumbnailItems(array(
+                                                'type'              => $this->module_name,
+                                                'upload_root_dir'   => 'upload/'.$this->module_name,
+                                                'module_img'        => 'plugins',
+                                                'attribute_img'     => $this->module_name,
+                                                'id'                =>'id',
+                                                'img'               =>'img',
+                                                'webp'              => true
+                                            ),
+                                                $fetchImg
+                                            );
+                                        }
+                                    }
+                                    break;
                         }
                     }else{
                         $this->getItems('size',$this->edit);
@@ -247,6 +274,13 @@ class backend_controller_files extends backend_db_files{
 			$this->data->getScheme(array('mc_config_img'),array('id_config_img','module_img','attribute_img','width_img','height_img','type_img','resize_img'));
 
             $config = $this->configCollection->fetchData(array('context'=>'all','type'=>'config'));
+            $plugins = $this->modelPlugins->getItems(array('type'=>'thumbnail'));
+            if($plugins != NULL) {
+                foreach ($plugins as $items) {
+                    $config[]['attr_name'] = $items['name'];
+                }
+            }
+
             $this->template->assign('setConfig',$config);
             $this->template->display('files/index.tpl');
         }

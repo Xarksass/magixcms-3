@@ -48,6 +48,11 @@
                 </header>
                 {block name='article:content'}
                 {/block}
+                {if isset($nbp) && $nbp > 1}
+                    <section class="container">
+                        {include file="section/brick/pagination/number.tpl" nbp=$nbp}
+                    </section>
+                {/if}
             </div>
         {/block}
 
@@ -64,7 +69,8 @@
 {block name="footer"}{include file="section/footer.tpl"}{/block}
 {block name="foot"}
     {script src="/{baseadmin}/min/?g=publicjs,globalize,jimagine" type="javascript"}
-    {script src="/{baseadmin}/min/?f={baseadmin}/template/js/global.min.js,libjs/vendor/jquery.formatter.min.js" type="javascript"}
+{*    <script src="https://cdnjs.cloudflare.com/ajax/libs/iScroll/5.2.0/iscroll.js"></script>*}
+    {script src="/{baseadmin}/min/?f={baseadmin}/template/js/iscroll.min.js,{baseadmin}/template/js/global.min.js,libjs/vendor/jquery.formatter.min.js" type="javascript"}
     {script src="/{baseadmin}/min/?f={baseadmin}/template/js/form.min.js" type="javascript"}
     <script type="text/javascript">
         $.jmRequest.notifier = {

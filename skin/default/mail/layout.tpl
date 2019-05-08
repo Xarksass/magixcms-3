@@ -18,9 +18,9 @@
     <span class="preheader"></span>
     <table class="body">
     <tr>
-        <td class="center" align="center" valign="top">
+        <td class="float-center" align="center" valign="top">
             <center data-parsed="">
-                <table align="center" class="container float-center">
+                <table align="center" class="container">
                     <tbody>
                     <tr>
                         <td>
@@ -40,7 +40,11 @@
                                                     </table>
                                                     <p class="text-center">
                                                         <a href="{$url}" target="_blank" title="{$companyData.name}" style="text-decoration: none; font-size: 46px; padding: 15px;">
-                                                            <img src="{$url}/skin/{$theme}/img/logo/{#logo_img_mail#}" alt="Logo {$companyData.name}" width="250" height="250"/>
+                                                            {if $logo && $logo.img.active eq 1}
+                                                                <img src="{$url}{$logo.img.medium.src}" width="{$logo.img.medium.w}" height="{$logo.img.medium.h}" alt="{if !empty($logo.img.alt)}{$logo.img.alt}{else}Logo {$companyData.name}{/if}" />
+                                                            {else}
+                                                                <img src="{$url}/skin/{$theme}/img/logo/{#logo_img_mail#}" alt="Logo {$companyData.name}" width="130" height="89"/>
+                                                            {/if}
                                                         </a>
                                                     </p>
                                                     <table class="spacer">

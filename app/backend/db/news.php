@@ -28,7 +28,8 @@ class backend_db_news
 								JOIN mc_lang AS lang ON ( tag.id_lang = lang.id_lang )
 								GROUP BY tagrel.id_news, lang.id_lang
 								)rel ON ( rel.id_news = p.id_news AND rel.id_lang = c.id_lang)
-							WHERE p.id_news = :edit";
+							WHERE p.id_news = :edit
+							ORDER BY p.id_news DESC";
 					break;
 				case 'pagesPublishedSelect':
 					$sql = "SELECT p.id_news, c.name_news
@@ -40,10 +41,17 @@ class backend_db_news
 					break;
 				case 'news':
 					$cond = '';
+					$limit = '';
+					if($config['offset']) {
+						$limit = ' LIMIT 0, '.$config['offset'];
+						if(isset($config['page']) && $config['page'] > 1) {
+							$limit = ' LIMIT '.(($config['page'] - 1) * $config['offset']).', '.$config['offset'];
+						}
+					}
 					if(isset($config['search']) && is_array($config['search']) && !empty($config['search'])) {
 						$nbc = 0;
 						foreach ($config['search'] as $key => $q) {
-							if($q != '') {
+							if($q !== '') {
 								$cond .= 'AND ';
 								$p = 'p'.$nbc;
 								switch ($key) {
@@ -65,11 +73,12 @@ class backend_db_news
 							}
 						}
 					}
-					$sql = "SELECT c.id_news,c.name_news,c.content_news,p.img_news,c.last_update,c.date_publish,c.published_news
+					$sql = "SELECT c.id_news,c.name_news,c.content_news,p.img_news,c.seo_title_news, c.seo_desc_news,c.last_update,c.date_publish,c.published_news
 							FROM mc_news AS p
 							JOIN mc_news_content AS c USING(id_news)
 							JOIN mc_lang AS lang ON(c.id_lang = lang.id_lang)
-							WHERE c.id_lang = :default_lang $cond";
+							WHERE c.id_lang = :default_lang $cond
+							ORDER BY id_news DESC".$limit;
 					break;
 				case 'img':
 					$sql = 'SELECT p.id_news, p.img_news FROM mc_news AS p WHERE p.img_news IS NOT NULL';
@@ -168,12 +177,12 @@ class backend_db_news
 					return 'Exception reçue : '.$e->getMessage();
 				}
 				break;
-			case 'newPages':
+			case 'page':
 				$sql = 'INSERT INTO `mc_news`(date_register) VALUE (NOW())';
 				break;
-			case 'newContent':
-				$sql = 'INSERT INTO `mc_news_content`(id_news,id_lang,name_news,url_news,resume_news,content_news,date_publish,published_news) 
-				  		VALUES (:id_news,:id_lang,:name_news,:url_news,:resume_news,:content_news,:date_publish,:published_news)';
+			case 'content':
+				$sql = 'INSERT INTO `mc_news_content`(id_news,id_lang,name_news,url_news,resume_news,content_news,seo_title_news, seo_desc_news,date_publish,published_news) 
+				  		VALUES (:id_news,:id_lang,:name_news,:url_news,:resume_news,:content_news,:seo_title_news, :seo_desc_news,:date_publish,:published_news)';
 				break;
 			case 'newTag':
 				$sql = 'INSERT INTO mc_news_tag (id_lang,name_tag) VALUES (:id_lang,:name_tag)';
@@ -213,12 +222,23 @@ class backend_db_news
 							url_news = :url_news,
 							resume_news = :resume_news,
 							content_news = :content_news,
+							seo_title_news = :seo_title_news,
+							seo_desc_news = :seo_desc_news,
 							date_publish = :date_publish, 
 							published_news = :published_news
 						WHERE id_news = :id_news AND id_lang = :id_lang';
 				break;
 			case 'img':
 				$sql = 'UPDATE mc_news SET img_news = :img_news WHERE id_news = :id_news';
+				break;
+			case 'imgContent':
+				$sql = 'UPDATE mc_news_content 
+						SET 
+							alt_img = :alt_img,
+							title_img = :title_img,
+							caption_img = :caption_img
+                		WHERE id_news = :id_news 
+                		AND id_lang = :id_lang';
 				break;
 			case 'order':
 				$sql = 'UPDATE mc_news SET order_news = :order_news WHERE id_news = :id_news';

@@ -9,33 +9,39 @@
     <meta name="description" content="{capture name="description"}{block name="description"}{/block}{/capture}{$smarty.capture.description}">
     <meta itemprop="description" content="{$smarty.capture.description}">
     <meta name="robots" content="{$setting['robots']['value']}">
-    {strip}{include file="section/loop/lang.tpl" amp=false iso={$lang}}{/strip}
+    {strip}{include file="section/loop/lang.tpl" amp=false amp_active=true iso={$lang}}{/strip}
     {*{if {module type="news"} eq true}<link rel="alternate" type="application/rss+xml" href="{$url}/news_{$lang}_rss.xml" title="RSS">{/if}*}
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {include file="section/brick/socials.tpl" title=$smarty.capture.title description=$smarty.capture.description}
-    {if $domainData != null && $domainData.tracking_domain != ''}{$domainData.tracking_domain}{else}{if $googleTools_webmaster != ''}<meta name="google-site-verification" content="{$googleTools_webmaster}">{/if}{/if}
-    <link rel="icon" type="image/png" href="{$url}/skin/{$theme}/img/favicon.png" />
-    <!--[if IE]><link rel="shortcut icon" type="image/x-icon" href="{$url}/skin/{$theme}/img/favicon.ico" /><![endif]-->
+    {if $googleTools_webmaster !== ''}<meta name="google-site-verification" content="{$googleTools_webmaster}">{/if}
+    {if $domain != null && $domain.tracking_domain != ''}{$domain.tracking_domain}{/if}
+    {if $favicon != null}
+        <link rel="icon" type="image/png" href="{$url}{$favicon.img.png.src}" />
+        <!--[if IE]><link rel="shortcut icon" type="image/x-icon" href="{$url}{$favicon.img.ico.src}" /><![endif]-->
+        {else}
+        <link rel="icon" type="image/png" href="{$url}/skin/{$theme}/img/favicon.png" />
+        <!--[if IE]><link rel="shortcut icon" type="image/x-icon" href="{$url}/skin/{$theme}/img/favicon.ico" /><![endif]-->
+    {/if}
     <link rel="manifest" href="{$url}/skin/{$theme}/manifest.json">
-    {include file="section/brick/google-font.tpl" fonts=['Heebo'=>'300,500,700']}
-    {if $browser !== 'IE'}<link rel="preload" href="https://fonts.googleapis.com/icon?family=Material+Icons" as="style">{/if}
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    {*{if $browser !== 'IE'}<link rel="preload" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" as="style">{/if}*}
-    {*<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">*}
-    {if $browser !== 'IE'}<link rel="preload" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous" as="style">{/if}
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
-    {capture name="stylesheet"}/min/?f=skin/{$theme}/css/{$viewport}.min.css{/capture}
-    {if $browser !== 'IE'}<link rel="preload" href="{if $setting.concat.value}{$smarty.capture.stylesheet|concat_url}{else}{$smarty.capture.stylesheet}{/if}" as="style">{/if}
-    <link rel="stylesheet" href="{if $setting.concat.value}{$smarty.capture.stylesheet|concat_url}{else}{$smarty.capture.stylesheet}{/if}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="{$smarty.capture.title}">
+    <link rel="apple-touch-icon" href="img/touch/homescreen168.png">
+    <meta name="theme-color" content="#7083db" />
+    {include file="section/brick/google-font.tpl" fonts=['Material Icons'=>'0','Heebo'=>'300,500,700']}
+    {* Please try to use icomoon to create a small iconfont and reduce load work *}
+    {capture name="stylesheet"}{if $setting.concat.value}{"/min/?f=skin/{$theme}/css/{$viewport}.min.css"|concat_url:'css'}{else}/min/?f=skin/{$theme}/css/{$viewport}.min.css{/if}{/capture}
+    {if $browser !== 'IE'}<link rel="preload" href="{$smarty.capture.stylesheet}" as="style">{/if}
+    <link rel="stylesheet" href="{$smarty.capture.stylesheet}">
     {capture name="scriptHtml5"}{strip}
         /min/?f=
         skin/{$theme}/js/vendor/html5shiv.min.js,
         skin/{$theme}/js/vendor/respond.min.js
     {/strip}{/capture}
-    <!--[if lt IE 9]><script src="{if $setting.concat.value}{$smarty.capture.scriptHtml5|concat_url}{else}{$smarty.capture.scriptHtml5}{/if}" type="text/javascript"></script><![endif]-->
-    {capture name="picturefill"}/min/?f=skin/{$theme}/js/vendor/picturefill.min.js,skin/{$theme}/js/vendor/intersection-obeserver.min.js{/capture}
-    <script src="{if $setting.concat.value}{$smarty.capture.picturefill|concat_url}{else}{$smarty.capture.picturefill}{/if}" type="text/javascript" async></script>
+    <!--[if lt IE 9]><script src="{if $setting.concat.value}{$smarty.capture.scriptHtml5|concat_url:'js'}{else}{$smarty.capture.scriptHtml5}{/if}"></script><![endif]-->
+    {capture name="picturefill"}/min/?f=skin/{$theme}/js/vendor/modernizr.min.js,skin/{$theme}/js/vendor/picturefill.min.js,skin/{$theme}/js/vendor/intersection-observer.min.js{/capture}
+    <script src="{if $setting.concat.value}{$smarty.capture.picturefill|concat_url:'js'}{else}{$smarty.capture.picturefill}{/if}" async></script>
     {block name="styleSheet"}{/block}
     {if $setting['analytics']['value']}<script type="text/javascript">
         //<![CDATA[
@@ -53,39 +59,42 @@
         //]]>
     </script>{/if}
 </head>
-<body id="{block name='body:id'}layout{/block}" class="{$bodyClass}{if $touch} touchscreen{/if}" itemscope itemtype="http://schema.org/{block name="webType"}WebPage{/block}" itemref="meta">
-    {include file="section/brick/cookie-consent.tpl"}
-    {include file="section/header.tpl"}
-    {block name="breadcrumb"}
-        {if isset($smarty.get.controller) && $smarty.get.controller !== 'home'}
-            {include file="section/brick/breadcrumb.tpl" icon='home' amp=false}
-        {/if}
-    {/block}
-    {block name="main:before"}{/block}
-    {block name="main"}
+<body id="{block name='body:id'}layout{/block}" class="{$bodyClass}{if $touch} touchscreen{/if} {block name='body:class'}{/block}" itemscope itemtype="http://schema.org/{block name="webType"}WebPage{/block}" itemref="meta">
+{include file="section/brick/cookie-consent.tpl"}
+{include file="section/header.tpl"}
+{block name="breadcrumb"}
+    {if isset($smarty.get.controller) && $smarty.get.controller !== 'home'}
+        {include file="section/brick/breadcrumb.tpl" icon='home' amp=false}
+    {/if}
+{/block}
+{block name="main:before"}{/block}
+{block name="main"}
     <main id="content">
         {block name="article:before"}{/block}
         {block name='article'}
-        <article class="container" itemprop="mainContentOfPage" itemscope itemtype="http://schema.org/WebPageElement">
-            {block name='article:content'}{/block}
-        </article>
+            <article class="container" itemprop="mainContentOfPage" itemscope itemtype="http://schema.org/WebPageElement">
+                {block name='article:content'}{/block}
+            </article>
         {/block}
         {block name="aside"}{/block}
         {block name="article:after"}{/block}
     </main>
-    {/block}
-    {block name="main:after"}{/block}
-    {include file="section/footer.tpl" adjust="clip" blocks=['sitemap','about','news','contact']}
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    {strip}{capture name="vendors"}
-        /min/?f=skin/{$theme}/js/vendor/bootstrap-{$viewport}.min.js,
-        {if $touch}skin/{$theme}/js/vendor/jquery.detect_swipe.min.js,{/if}
-        skin/{$theme}/js/vendor/featherlight.min.js,
-        skin/{$theme}/js/vendor/featherlight.gallery.min.js,
-        skin/{$theme}/js/global-{$viewport}.min.js,
-        skin/{$theme}/js/lazyload.min.js
-    {/capture}
-    <script src="{if $setting.concat.value}{$smarty.capture.vendors|concat_url}{else}{$smarty.capture.vendors}{/if}" type="text/javascript" async></script>
-    {block name="foot"}{/block}
+{/block}
+{block name="main:after"}{/block}
+{include file="section/footer.tpl" adjust="clip" blocks=['sitemap','about','news','contact']}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+{strip}{capture name="vendors"}
+    /min/?f=skin/{$theme}/js/vendor/bootstrap-custom.min.js,
+    {if $touch}skin/{$theme}/js/vendor/jquery.detect_swipe.min.js,{/if}
+    skin/{$theme}/js/vendor/featherlight.min.js,
+    skin/{$theme}/js/vendor/featherlight.gallery.min.js,
+    skin/{$theme}/js/vendor/owl.carousel.min.js,
+    skin/{$theme}/js/vendor/lazysizes.min.js,
+    {if $viewport !== 'mobile'}skin/{$theme}/js/affixhead.min.js,{/if}
+    skin/{$theme}/js/global.min.js
+{/capture}{/strip}
+<script src="{if $setting.concat.value}{$smarty.capture.vendors|concat_url:'js'}{else}{$smarty.capture.vendors}{/if}" defer></script>
+{block name="foot"}{/block}
+{include file="section/brick/service_worker.tpl"}
 </body>
 </html>

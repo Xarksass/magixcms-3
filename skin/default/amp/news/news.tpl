@@ -1,11 +1,11 @@
 {extends file="amp/news/index.tpl"}
 {block name="stylesheet"}{fetch file="skin/{$theme}/amp/css/topicality.min.css"}{/block}
 {block name='body:id'}topicality{/block}
-{block name="title"}{seo_rewrite conf=['level'=>'record','type'=>'title','default'=>{$news.title}] record={$news.title}}{/block}
-{block name="description"}{seo_rewrite conf=['level'=>'record','type'=>'description','default'=>{$news.resume}] record={$news.title}}{/block}
+{block name="title"}{$news.seo.title}{/block}
+{block name="description"}{$news.seo.description}{/block}
 {block name="webType"}WebPage{/block}
 {block name="amp-script"}
-    {if $news.imgSrc.large}
+    {if $news.img.large.src}
     <script async custom-element="amp-image-lightbox" src="https://cdn.ampproject.org/v0/amp-image-lightbox-0.1.js"></script>
     {amp_components content=$news.content image=false}
     {else}
@@ -18,7 +18,7 @@
             <header>
                 {strip}
                     <h1 itemprop="headline">
-                        {$news.title}
+                        {$news.name}
                         <small>
                             {*<span itemprop="author" itemscope itemtype="https://schema.org/Person">
                                 {#news_by#|ucfirst} <span itemprop="name">{$news.author}</span>
@@ -32,14 +32,14 @@
                 {/strip}
                 <div class="row">
                     <div class="col-6">
-                        <p class="label">Par thème</p>
+                        <p class="label">{#news_by_theme#|ucfirst}</p>
                         <div class="dropdown-select">
                             <div class="dropdown">
                                 <amp-accordion disable-session-states>
                                     <section>
                                         <header>
                                             <button class="btn btn-block btn-box btn-default" type="button">
-                                                {if isset($tag)}{$tag.name}{else}Choisir un thème{/if}
+                                                {if isset($tag)}{$tag.name}{else}{#choose_a_theme#|ucfirst}{/if}
                                                 <span class="show-more"><i class="material-icons">arrow_drop_down</i></span>
                                                 <span class="show-less"><i class="material-icons">arrow_drop_up</i></span>
                                             </button>
@@ -63,14 +63,14 @@
                         </div>
                     </div>
                     <div class="col-6">
-                        <p class="label">Par date</p>
+                        <p class="label">{#news_by_date#|ucfirst}</p>
                         <div class="dropdown-select">
                             <div class="dropdown">
                                 <amp-accordion disable-session-states>
                                     <section>
                                         <header>
                                             <button class="btn btn-block btn-box btn-default" type="button">
-                                                {if $smarty.get.date}{$smarty.get.date|date_format:'%Y/%m/%d'}{elseif $monthName}{$smarty.get.year}/{if isset($smarty.get.month)}{$smarty.get.month}/{/if}{else}Choisir une date{/if}
+                                                {if $smarty.get.date}{$smarty.get.date|date_format:'%Y/%m/%d'}{elseif $monthName}{$smarty.get.year}/{if isset($smarty.get.month)}{$smarty.get.month}/{/if}{else}{#choose_a_date#|ucfirst}{/if}
                                                 <span class="show-more"><i class="material-icons">arrow_drop_down</i></span>
                                                 <span class="show-less"><i class="material-icons">arrow_drop_up</i></span>
                                             </button>
@@ -124,7 +124,7 @@
             </div>
             <div itemprop="author" itemscope itemtype="https://schema.org/{$companyData.type}" itemref="publisher"></div>
             <div itemprop="articleBody">
-                {if $news.imgSrc.small}
+                {if $news.img.small.src}
                     {*<figure{if $news.imgSrc.medium} itemprop="image" itemscope itemtype="http://schema.org/ImageObject"{/if}>
                         {if $news.imgSrc.small}
                             <meta itemprop="url" content="{$url}{$news.imgSrc.medium}" />
@@ -138,19 +138,40 @@
                         {/if}
                     </figure>*}
                     <figure itemprop="image" itemscope itemtype="http://schema.org/ImageObject">
-                        <meta itemprop="url" content="{$url}{$news.imgSrc.large}" />
-                        <meta itemprop="height" content="618" />
-                        <meta itemprop="width" content="1000" />
-                        <amp-img on="tap:lightbox1"
+                        <meta itemprop="url" content="{$url}{$news.img.large.src}" />
+                        <meta itemprop="height" content="{$news.img.large['h']}" />
+                        <meta itemprop="width" content="{$news.img.large['w']}" />
+                        {*<amp-img on="tap:lightbox1"
                                  role="button"
                                  tabindex="0"
-                                 src="{$news.imgSrc.large}"
+                                 src="{$news.img.large.src}"
                                  alt="{$news.title}"
                                  title="{$news.title}"
                                  layout="responsive"
-                                 width="1000"
-                                 height="618"></amp-img>
-                        <figcaption class="hidden">{$news.title}</figcaption>
+                                 width="{$news.img.large['w']}"
+                                 height="{$news.img.large['h']}"></amp-img>*}
+                        <amp-img on="tap:lightbox1"
+                                 role="button"
+                                 tabindex="0"
+                                 src="{$news.img.large['src_webp']}"
+                                 width="{$news.img.large['w']}"
+                                 height="{$news.img.large['h']}"
+                                 layout="responsive"
+                                 alt="{$news.img.alt}"
+                                 title="{$news.img.title}">
+                            <amp-img on="tap:lightbox1"
+                                     role="button"
+                                     tabindex="0"
+                                     alt="{$news.img.alt}"
+                                     fallback
+                                     title="{$news.img.title}"
+                                     src="{$news.img.large['src']}"
+                                     width="{$news.img.large['w']}"
+                                     height="{$news.img.large['h']}"
+                                     layout="responsive">
+                            </amp-img>
+                        </amp-img>
+                        <figcaption class="hidden">{$news.img.caption}</figcaption>
                     </figure>
                     <amp-image-lightbox id="lightbox1" layout="nodisplay"></amp-image-lightbox>
                 {/if}

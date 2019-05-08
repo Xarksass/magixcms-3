@@ -43,10 +43,11 @@ class backend_controller_country extends backend_db_country
             $this->name_country = $formClean->simpleClean($_POST['name_country']);
         }
 
-        // --- Search
-        if (http_request::isGet('search')) {
-            $this->search = $formClean->arrayClean($_GET['search']);
-        }
+		// --- Search
+		if (http_request::isGet('search')) {
+			$this->search = $formClean->arrayClean($_GET['search']);
+			$this->search = array_filter($this->search, function ($value) { return $value !== ''; });
+		}
 
         # ORDER PAGE
         if(http_request::isPost('country')){
@@ -60,13 +61,14 @@ class backend_controller_country extends backend_db_country
 	 * @param string|int|null $id
 	 * @param string $context
 	 * @param boolean $assign
+	 * @param boolean $pagination
 	 * @return mixed
 	 */
-	private function getItems($type, $id = null, $context = null, $assign = true) {
-		return $this->data->getItems($type, $id, $context, $assign);
+	private function getItems($type, $id = null, $context = null, $assign = true, $pagination = false) {
+		return $this->data->getItems($type, $id, $context, $assign, $pagination);
 	}
 
-    /**
+	/**
      * @return array
      */
     private function setCollection(){
@@ -180,7 +182,6 @@ class backend_controller_country extends backend_db_country
                         $this->template->display('country/add.tpl');
                     }
                     break;
-
                 case 'edit':
                     if (isset($this->iso_country)) {
                         $this->upd(
@@ -219,7 +220,7 @@ class backend_controller_country extends backend_db_country
                     break;
             }
         }else{
-			$this->getItems('countries');
+			$this->getItems('countries',null,'all',true,true);
 			$assign = array(
 				'id_country',
 				'iso_country' => ['title' => 'iso_country'],
