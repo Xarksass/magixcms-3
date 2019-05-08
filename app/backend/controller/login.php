@@ -62,6 +62,7 @@ class backend_controller_login extends backend_db_employee{
 		$email_admin,
 		$email_forgot,
 		$key,
+        $ticket_passwd,
 		$passwd_admin,
 		$stay_logged,
 		$kpl,
@@ -110,6 +111,9 @@ class backend_controller_login extends backend_db_employee{
         }
 		if (http_request::isGet('k')) {
 			$this->key = $formClean->simpleClean($_GET['k']);
+		}
+		if (http_request::isGet('t')) {
+			$this->ticket_passwd = $formClean->simpleClean($_GET['t']);
 		}
 
         $this->httpSession = new http_session($this->settings['ssl']);
@@ -213,20 +217,24 @@ class backend_controller_login extends backend_db_employee{
 							));
                         }
                         else {
-                        	$this->session->redirect(true);
+                        	//$this->session->redirect(true);
+                        	$this->message->json_post_response(true,null,http_url::getUrl().'/admin/index.php?controller=dashboard'); exit();
                         }
 
                     }
                     else {
-                        $this->message->getNotify('error_login', array('method' => 'fetch', 'assignFetch' => 'error'));
+                        //$this->message->getNotify('error_login', array('method' => 'display', 'assignFetch' => 'error'));
+                        $this->message->json_post_response(false,'error_login'); exit();
                     }
                 }
                 else {
-                    $this->message->getNotify('error_login', array('method' => 'fetch', 'assignFetch' => 'error'));
+                    //$this->message->getNotify('error_login', array('method' => 'display', 'assignFetch' => 'error'));
+                    $this->message->json_post_response(false,'error_login'); exit();
                 }
             }
             else{
-                $this->message->getNotify('error_hash',array('method'=>'fetch','assignFetch'=>'error'));
+                //$this->message->getNotify('error_hash',array('method'=>'display','assignFetch'=>'error'));
+                $this->message->json_post_response(false,'error_hash'); exit();
             }
         }
     }
@@ -353,7 +361,7 @@ class backend_controller_login extends backend_db_employee{
 	 */
 	private function getBodyMail($data, $type, $debug){
 		$this->template->configLoad();
-		$cssInliner = $this->settings['css_inliner'];
+        $cssInliner = $this->setting->getSetting('css_inliner');
 		$this->template->assign('getDataCSSIColor',$this->setting->fetchCSSIColor());
 		$this->template->assign('data', $data);
 		$bodyMail = $this->template->fetch('login/mail/'.$type.'.tpl');
@@ -395,7 +403,7 @@ class backend_controller_login extends backend_db_employee{
 			$this->mail->batch_send_mail($message);
 
 			if($json_response){
-				$this->message->json_post_response(true,'send');
+				$this->message->json_post_response(true,null,$this->template->getConfigVars('request_success_send'));
 			}
 		}
 	}
@@ -414,7 +422,7 @@ class backend_controller_login extends backend_db_employee{
 						if($data) {
 							$pwdTicket = filter_rsa::randString(32);
 							$data['ticket'] = $pwdTicket;
-							parent::update(array('context'=>'employee','type'=>'askPassword'),array('email_admin'=>$this->email_forgot,'token'=>$pwdTicket));
+							parent::update(array('context'=>'employee','type'=>'askPassword'),array('email_admin'=>$this->email_forgot,'change_passwd'=>$pwdTicket));
 							$this->sendMail($data,$this->email_forgot,$this->action,true);
 						} else {
 							$this->message->json_post_response(false,'error_mail_account');

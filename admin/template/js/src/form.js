@@ -2,91 +2,66 @@
  * @version    1.0
  * @author Salvatore Di Salvo <disalvo.infographiste@gmail.com>
  */
-$(document).ready(function(){
-    // *** Set default values for forms validation
-	$.validator.setDefaults({
-        debug: false,
-        highlight: function(element, errorClass, validClass) {
-            if($(element).parent().is("div") || $(element).parent().is("p")) {
-                if($(element).parent().hasClass('input-group')) {
-                    $(element).parent().parent().addClass("has-error has-feedback");
-                } else {
-                    if(!$(element).parent().hasClass('has-error'))
-                        $(element).parent().append('<span class="fa fa-warning form-control-feedback" aria-hidden="true"></span>');
-                    $(element).parent().addClass("has-error has-feedback");
-                }
-            }
-            else if($(element).is('[type="radio"]')) {
-                $(element).parent().parent().addClass("has-error").parent().addClass("has-error");
-            }
-        },
-        unhighlight: function(element, errorClass, validClass) {
-            if($(element).parent().is("div") || $(element).parent().is("p")) {
-                if($(element).parent().hasClass('input-group')) {
-                    $(element).parent().parent().removeClass("has-error has-feedback");
-                } else {
-                    if($(element).parent().hasClass('has-error'))
-                        $(element).next('.fa').remove();
-                    $(element).parent().removeClass("has-error has-feedback");
-                }
-            }
-            else if($(element).is('[type="radio"]')) {
-                $(element).parent().parent().removeClass("has-error").parent().removeClass("has-error");
-            }
-        },
-        // the errorPlacement has to take the table layout into account
-        errorPlacement: function(error, element) {
-            if ( element.is(":radio") ){
-                element.parent().parent().parent().append(error);
-            }else if ( element.is(":checkbox") ){
-                error.insertAfter(element);
-            }else if ( element.is("select")){
-                error.insertAfter(element);
-            }else if ( element.is(".checkMail") ){
-                error.insertAfter(element.next());
-            }else if ( element.is("#cryptpass") ){
-                error.insertAfter(element.next());
-                $("<br />").insertBefore(error);
-            }else{
-                if(element.next().is(":button") || element.next().is(":file")){
-                    error.insertAfter(element);
-                    $("<br />").insertBefore(error);
-                }else if ( element.next().is(":submit") ){
-                    error.insertAfter(element.next());
-                    $("<br />").insertBefore(error);
-                }else{
-                    if($(element).parent().hasClass('input-group')) {
-                        error.insertAfter(element.parent());
-                    } else {
-                        error.insertAfter(element);
-                    }
-                }
-            }
-        },
-        errorClass: "help-block error",
-        errorElement: "span",
-        validClass: "success",
-        // set this class to error-labels to indicate valid fields
-        success: function(label) {
-            // set &nbsp; as text for IE
-            label.remove();
-        } 
-    });
+const niceForms = (function ($, undefined) {
+    'use strict';
 
-    // *** Set default format for date input
-    $('.date-input').formatter({
-        'pattern': '{{99}}/{{99}}/{{9999}}',
-        'persistent': false
-    });
+    function isEmpty(elem) {
+        const val = elem.val();
+        return ((typeof val === 'string' && val.length === 0) || (typeof val === 'object' && val == null));
+    }
 
-    // *** Set default format for date input
-    $('.time-input').formatter({
-        'pattern': '{{99}}:{{99}}',
-        'persistent': false
-    });
-});
+    function updateParent(elem) {
+        const id = elem.attr('id');
+        if(isEmpty(elem))
+            $('[for="'+id+'"]').addClass('is_empty');
+        else
+            $('[for="'+id+'"]').removeClass('is_empty');
+    }
 
-var globalForm = (function ($, undefined) {
+    function reset() {
+        $('form').each(function(){
+            let nicefields = $(this).find('input:not(.not-nice),textarea:not(.not-nice),select:not(.not-nice)');
+            nicefields.each(function(){updateParent($(this));});
+        });
+    }
+
+    function init() {
+        $('form').each(function(){
+            let input = $(this).find('input:not(.not-nice)');
+            let txtarea = $(this).find('textarea:not(.not-nice)');
+            let select = $(this).find('select:not(.not-nice)');
+
+            input.each(function(){
+                let self = $(this);
+                if(self.attr('type') !== 'hidden') {
+                    updateParent(self);
+                    self.on('change',function(){updateParent(self)});
+                }
+            });
+            txtarea.each(function(){
+                let self = $(this);
+                updateParent(self);
+                self.on('change',function(){updateParent(self)});
+            });
+            select.each(function(){
+                let self = $(this);
+                updateParent(self);
+                self.on('change',function(){updateParent(self)});
+            });
+        });
+    }
+
+    return {
+        /**
+         * Public functions
+         */
+        init: function () { init(); },
+        reset: function () { reset(); }
+    };
+})(jQuery);
+
+const globalForm = (function ($, undefined) {
+    'use strict';
     /**
      * Redirection function.
      * @param {string} loc - url where to redirect.
@@ -569,6 +544,22 @@ var globalForm = (function ($, undefined) {
         }
     }
 
+    function getContent(controller,type,id,content) {
+        var dfd = $.Deferred();
+
+        $.jmRequest({
+            handler: "ajax",
+            url: controller+'&action=get&content='+type+'&id='+id,
+            method: 'get',
+            success: function(d){
+                content.push(d);
+                dfd.resolve();
+            }
+        });
+
+        return dfd.promise();
+    }
+
     /**
      * Initialise the handlers of optional fields
      */
@@ -631,22 +622,6 @@ var globalForm = (function ($, undefined) {
                             $.when.apply($, requests).done(function(){
                                 displayContent(content,contc,$boxes);
                             });
-
-                            function getContent(controller,type,id,content) {
-                                var dfd = $.Deferred();
-
-                                $.jmRequest({
-                                    handler: "ajax",
-                                    url: controller+'&action=get&content='+type+'&id='+id,
-                                    method: 'get',
-                                    success: function(d){
-                                        content.push(d);
-                                        dfd.resolve();
-                                    }
-                                });
-
-                                return dfd.promise();
-                            }
                         }
                         else {
                             // *** Displaying boxe(s)
@@ -709,3 +684,83 @@ var globalForm = (function ($, undefined) {
         }
     };
 })(jQuery);
+
+$(document).ready(function(){
+    // *** Set default values for forms validation
+    /*jQuery.validator.addClassRules("phone", {
+        pattern: '((?=[0-9\+\-\ \(\)]{9,20})(\+)?\d{1,3}(-| )?\(?\d\)?(-| )?\d{1,3}(-| )?\d{1,3}(-| )?\d{1,3}(-| )?\d{1,3})'
+    });*/
+    $.validator.setDefaults({
+        debug: false,
+        highlight: function(element, errorClass, validClass) {
+            let parent = $(element).parent();
+            if(parent.is("div,p")) {
+                if(parent.hasClass('input-group')) {
+                    parent.parent().addClass("has-error has-feedback");
+                } else {
+                    //if(!parent.hasClass('has-error')) parent.append('<span class="fa fa-warning form-control-feedback" aria-hidden="true"></span>');
+                    parent.addClass("has-error has-feedback");
+                }
+            }
+            else if($(element).is('[type="radio"],[type="checkbox"]')) {
+                parent.parent().addClass("has-error").parent().addClass("has-error");
+            }
+        },
+        unhighlight: function(element, errorClass, validClass) {
+            let parent = $(element).parent();
+            if(parent.is("div,p")) {
+                if(parent.hasClass('input-group')) {
+                    parent.parent().removeClass("has-error has-feedback");
+                } else {
+                    if(parent.hasClass('has-error'))
+                        parent.find('.fa').remove();
+                    parent.removeClass("has-error has-feedback");
+                }
+            }
+            else if($(element).is('[type="radio"],[type="checkbox"]')) {
+                parent.parent().removeClass("has-error").parent().removeClass("has-error");
+            }
+        },
+        // the errorPlacement has to take the table layout into account
+        errorPlacement: function(error, element) {
+            if ( element.is(":radio") ) {
+                element.parent().parent().parent().append(error);
+            } else if ( element.is(":checkbox,.checkMail")) {
+                error.insertAfter(element.next());
+            } else if ( element.is("#cryptpass,:submit")) {
+                error.insertAfter(element.next());
+                $("<br />").insertBefore(error,null);
+            } else if ( element.next().is(":button,:file") ) {
+                error.insertAfter(element);
+                $("<br />").insertBefore(error,null);
+            } else if ( element.parent().hasClass('input-group') ) {
+                error.insertAfter(element.parent());
+            } else {
+                error.insertAfter(element);
+            }
+        },
+        errorClass: "help-block error",
+        errorElement: "span",
+        validClass: "success",
+        // set this class to error-labels to indicate valid fields
+        success: function(label) {
+            // set &nbsp; as text for IE
+            label.remove();
+        }
+    });
+
+    // *** Set default format for date input
+    $('.date-input').formatter({
+        'pattern': '{{99}}/{{99}}/{{9999}}',
+        'persistent': false
+    });
+
+    // *** Set default format for date input
+    $('.time-input').formatter({
+        'pattern': '{{99}}:{{99}}',
+        'persistent': false
+    });
+
+    niceForms.init();
+    if(controller) globalForm.run(controller);
+});

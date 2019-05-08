@@ -21,9 +21,9 @@
     }
 }
 
-input[type="password"] {
+/*input[type="password"] {
     font-family: "Open Sans",Helvetica,Arial,sans-serif,"FontAwesome" !important;
-}
+}*/
 
 .form-group.radio-group > label {
     float: left;
@@ -49,9 +49,13 @@ input[type="password"] {
 .form-group.has-error {
     label,
     label.control-label {
-        color: @state-danger-text;
+        color: @state-danger-text !important;
     }
-    textarea,
+
+    input:focus {
+        box-shadow: none;
+    }
+    /*textarea,
     input[type="text"],
     input[type="password"],
     input[type="search"] {
@@ -62,8 +66,9 @@ input[type="password"] {
                 box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 6px #ce8483;
             }
         }
-    }
+    }*/
 }
+
 .radio.has-error {
     + .help-block.error {
         color: #a94442;
@@ -355,4 +360,227 @@ textarea.form-control {
     float: left;
     margin-right: 15px;
     margin-bottom: 17px;
+}
+
+.nice-placeholder() {
+    color: transparent;
+    transition-duration: .2s;
+    transition-timing-function: cubic-bezier(.4,0,.2,1);
+    font-size: 80%;
+}
+
+.nice-form {
+    @padb: 8px;
+
+    .form-group.has-error {
+        label,
+        label.control-label {
+            color: @state-danger-text !important;
+
+            &:after {
+                left: 0;
+                visibility: visible;
+                width: 100%;
+                background-color: @state-danger-text;
+                bottom: 32px + @padb;
+            }
+        }
+
+        .error {
+            font-size: 80%;
+        }
+
+        input:focus {
+            box-shadow: none;
+        }
+    }
+
+    .has-feedback label~.form-control-feedback {
+        top: 20px;
+    }
+
+    .form-group {
+        position: relative;
+        font-size: 16px;
+        margin: 0;
+        padding: 20px 0 @padb;
+    }
+
+    .error ~ label,
+    input ~ label,
+    select ~ label,
+    textarea ~ label,
+    div:not(.switch) ~label {
+        bottom: 0;
+        color: rgba(0,0,0,.26);
+        font-size: 16px;
+        font-weight: 400;
+        left: 0;
+        right: 0;
+        pointer-events: none;
+        position: absolute;
+        display: block;
+        top: 24px;
+        width: 100%;
+        overflow: hidden;
+        white-space: nowrap;
+        text-align: left;
+        margin: 0;
+        transition-duration: .2s;
+        transition-timing-function: cubic-bezier(.4,0,.2,1);
+
+        &:after {
+            background-color: @main-color;
+            bottom: @padb;
+            content: '';
+            height: 2px;
+            left: 45%;
+            position: absolute;
+            transition-duration: .2s;
+            transition-timing-function: cubic-bezier(.4,0,.2,1);
+            -webkit-transition-property: left, visibility, width; /* Safari */
+            transition-property: left, visibility, width;
+            visibility: hidden;
+            width: 10px;
+        }
+
+        &:not(.is_empty) {
+            color: @main-color;
+            font-size: 12px;
+            top: 4px;
+            visibility: visible;
+        }
+    }
+
+    // Test
+    input[type="text"],
+    input[type="search"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="number"],
+    input[type="password"],
+    select,
+    textarea {
+        border: none;
+        border-bottom: 1px solid rgba(0,0,0,.12);
+        box-shadow: none;
+        font-size: 16px;
+        font-family: "Helvetica","Arial",sans-serif;
+        margin: 0;
+        padding: 4px 0;
+        background: 0 0;
+        text-align: left;
+        color: inherit;
+
+        &.hint {
+            border-bottom: none;
+            color: #cccccc;
+        }
+
+        &:focus {
+            ~ label {
+                color: @main-color;
+                font-size: 12px;
+                top: 4px;
+                visibility: visible;
+
+                &:after {
+                    left: 0;
+                    visibility: visible;
+                    width: 100%;
+                }
+            }
+        }
+    }
+
+    input,
+    textarea,
+    select {
+        &::-webkit-input-placeholder{
+            .nice-placeholder();
+        }
+        &::-moz-placeholder{
+            .nice-placeholder();
+        }
+        &:-ms-input-placeholder{
+            .nice-placeholder();
+        }
+        &:-moz-placeholder {
+            .nice-placeholder();
+        }
+
+        &:focus {
+            box-shadow: none;
+            outline: none;
+
+            &::-webkit-input-placeholder{
+                color: rgba(0,0,0,.26);
+            }
+            &::-moz-placeholder{
+                color: rgba(0,0,0,.26);
+            }
+            &:-ms-input-placeholder{
+                color: rgba(0,0,0,.26);
+            }
+            &:-moz-placeholder {
+                color: rgba(0,0,0,.26);
+            }
+        }
+    }
+
+    .checkbox {
+        label {
+            padding-left: 0;
+        }
+        input {
+            visibility: hidden;
+            position: absolute;
+            height: 0;
+            width: 0;
+        }
+        .box {
+            color: @sd-color;
+        }
+        input ~ .checkedbox {
+            display: none;
+        }
+        input:checked ~ .box {
+            display: none;
+        }
+        input:checked ~ .checkedbox {
+            display: inline-block;
+            color: @main-color;
+        }
+    }
+}
+
+.svg-loader {
+    svg {
+        position: relative;
+        height: 100px;
+        width: 100px;
+    }
+    @keyframes outer {
+        0% { stroke-dasharray: 1,200; stroke-dashoffset: 0; }
+        50% { stroke-dasharray: 89,200; stroke-dashoffset: -35; }
+        100% { stroke-dasharray: 89,200; stroke-dashoffset: -124; }
+    }
+    @keyframes o-rotate {
+        0% { transform: rotate(0); }
+        100% { transform: rotate(360deg); }
+    }
+    .outer {
+        animation: outer 1.5s ease-in-out infinite, o-rotate 2s linear infinite;
+        transform-origin: 50px 50px;
+    }
+    circle {
+        fill: none;
+        stroke: hsl(219, 48%, 60%);
+        stroke-width: 4;
+    }
+    .ring-bg {
+        fill: none;
+        stroke: #eee;
+        stroke-width: 4;
+    }
 }

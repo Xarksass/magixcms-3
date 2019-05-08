@@ -26,7 +26,7 @@
     {/strip}{/capture}
     {strip}<!--[if lt IE 9]>{script src=$smarty.capture.scriptHtml5 type="javascript"}<![endif]-->{/strip}
     </head>
-<body id="{block name='body:id'}layout{/block}" class="{$viewport}{if $touch} touchscreen{/if}">
+<body id="{block name='body:id'}layout{/block}" class="{$bodyClass}{if $touch} touchscreen{/if}">
 {block name="header"}{include file="section/header.tpl"}{/block}
 {block name="main"}
     <main id="{block name='main:id'}page{/block}">
@@ -69,26 +69,14 @@
 {block name="footer"}{include file="section/footer.tpl"}{/block}
 {block name="foot"}
     {script src="/{baseadmin}/min/?g=publicjs,globalize,jimagine" type="javascript"}
-{*    <script src="https://cdnjs.cloudflare.com/ajax/libs/iScroll/5.2.0/iscroll.js"></script>*}
-    {script src="/{baseadmin}/min/?f={baseadmin}/template/js/iscroll.min.js,{baseadmin}/template/js/global.min.js,libjs/vendor/jquery.formatter.min.js" type="javascript"}
+    {script src="/{baseadmin}/min/?f={baseadmin}/template/js/global.min.js,libjs/vendor/jquery.formatter.min.js" type="javascript"}
     {script src="/{baseadmin}/min/?f={baseadmin}/template/js/form.min.js" type="javascript"}
     <script type="text/javascript">
-        $.jmRequest.notifier = {
-            cssClass : '.mc-message'
-        };
+        $.jmRequest.notifier = { cssClass : '.mc-message' };
         var editor_version = "{$smarty.const.VERSION_EDITOR}";
         var baseadmin = "{baseadmin}";
         var iso = "{iso}";
-
-        $(function(){
-            if (typeof globalForm == "undefined")
-            {
-                console.log("globalForm is not defined");
-            }else{
-                var controller = "{$smarty.server.SCRIPT_NAME}?controller={$smarty.get.controller}";
-                globalForm.run(controller);
-            }
-        });
+        var controller = "{$smarty.server.SCRIPT_NAME}?controller={$smarty.get.controller}";
     </script>
 {/block}
 </body>
