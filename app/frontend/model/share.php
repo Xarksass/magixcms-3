@@ -40,7 +40,7 @@ class frontend_model_share extends frontend_db_share {
 
 	/**
 	 * frontend_model_about constructor.
-	 * @param stdClass $t
+	 * @param frontend_controller_template $t
 	 */
 	public function __construct($t = null)
 	{

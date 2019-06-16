@@ -37,7 +37,7 @@ class backend_model_plugins{
 
 	/**
 	 * backend_model_plugins constructor.
-	 * @param stdClass $t
+	 * @param backend_controller_template $t
 	 */
     public function __construct($t = null)
     {
@@ -265,4 +265,3 @@ class backend_model_plugins{
         }
     }
 }
-?>

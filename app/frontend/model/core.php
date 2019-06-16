@@ -39,18 +39,19 @@
  * Time: 00:10
  * License: Dual licensed under the MIT or GPL Version
  */
-class frontend_model_core{
+class frontend_model_core {
     /**
      * Retourne un tableaux contenant les identifiant actif (int OR string)
      * @access public
      * @static
+     * @param frontend_controller_template $t
      * @return array
      * @internal param array $setRouter
      */
-    public function setCurrentId ()
+    public function setCurrentId ($t = null)
     {
-        $ModelTemplate  =   new frontend_model_template();
-        //$HelperClean    =   new form_inputFilter();
+        $ModelTemplate = $t ? $t : new frontend_model_template();
+        //$HelperClean  = new form_inputFilter();
         $formClean = new form_inputEscape();
         $current = array();
         $current['controller']['id'] = null;
@@ -64,7 +65,7 @@ class frontend_model_core{
             $current['controller']['id_parent'] = $formClean->numeric($_GET['id_parent']);
         }
 
-        $current['lang']['iso']  = $ModelTemplate->currentLanguage();
+        $current['lang']['iso']  = $ModelTemplate->lang;
 
         return $current;
     }

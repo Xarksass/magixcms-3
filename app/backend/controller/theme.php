@@ -8,14 +8,14 @@ class backend_controller_theme extends backend_db_theme{
 
     /**
 	 * backend_controller_theme constructor.
-	 * @param stdClass $t
+	 * @param backend_controller_template $t
 	 */
     public function __construct($t = null)
     {
         $this->template = $t ? $t : new backend_model_template;
         $this->message = new component_core_message($this->template);
         $this->header = new http_header();
-        $this->data = new backend_model_data($this);
+        $this->data = new backend_model_data($this, $this->template);
         $this->modelLanguage = new backend_model_language($this->template);
 		$this->collectionLanguage = new component_collections_language();
         $formClean = new form_inputEscape();

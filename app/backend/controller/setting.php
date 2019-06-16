@@ -6,14 +6,14 @@ class backend_controller_setting extends backend_db_setting{
 
 	/**
 	 * backend_controller_setting constructor.
-	 * @param stdClass $t
+	 * @param backend_controller_template $t
 	 */
     public function __construct($t = null)
     {
         $this->template = $t ? $t : new backend_model_template;
         $this->message = new component_core_message($this->template);
         $this->header = new http_header();
-        $this->data = new backend_model_data($this);
+        $this->data = new backend_model_data($this, $this->template);
         $this->settings = new backend_model_setting();
         $formClean = new form_inputEscape();
 

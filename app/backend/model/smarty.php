@@ -50,111 +50,50 @@
  * Extend class smarty
  *
  */
-class backend_model_smarty extends Smarty{
+class backend_model_smarty extends component_core_smarty {
 	/**
-    * Variable statique permettant de porter l'instance unique
-    */
-    static protected $instance;
-	/**
-	 * function construct class
-	 *
+	 * backend_model_smarty constructor.
 	 */
-	public function __construct(){
+	public function __construct($t = null){
+	    $this->template = $t;
 		/**
-		 * include parent var smarty
+		 * include parent component_core_smarty
 		 */
 		parent::__construct(); 
-		self::setParams();
-		/*
-		 You can remove this comment, if you prefer this JSP tag style
-		 instead of the default { and }
-		 $this->left_delimiter =  '<%';
-		 $this->right_delimiter = '%>';
-		 */
+		//self::setParams();
 	}
-	private function setPath(){
-		return component_core_system::basePath();
+
+    public function setPath(){
+		return parent::setPath().PATHADMIN.DIRECTORY_SEPARATOR;
 	}
+
 	/**
 	 * Les paramètres pour la configuration de smarty 3
 	 */
 	protected function setParams(){
         /**
-         * Path -> configs
-         */
-        $this->setConfigDir(array(
-            self::setPath().PATHADMIN.'/i18n/'
-        ));
-        /**
-         * Path -> templates
-         */
-        $this->setTemplateDir(array(
-            self::setPath().PATHADMIN.'/template/'
-        ));
-        /**
-         * path plugins
-         * @var void
-         */
-        $this->setPluginsDir(array(
-            self::setPath().'lib/smarty3/plugins/'
-			,self::setPath().'app/wdcore/'
-			,self::setPath().PATHADMIN.'/template/widget/'
-        ));
-        /**
          * Path -> compile
          */
         $this->setCompileDir(
-            self::setPath().PATHADMIN.'/caching/templates_c/'
+            $this->setPath().'/caching/templates_c/'
         );
-		/**
-		 * debugging (true/false)
-		 */
-		$this->debugging = false;
-		/**
-		 * compile (true/false)
-		 */
-		$this->compile_check = true;
-		/**
-		 * Force compile
-		 * @var void
-		 * (true/false)
-		 */
-		$this->force_compile = false;
-		/**
-		 * caching (true/false)
-		 */
-        $this->setCaching(false);
-        //$this->setCachingType('apc');
+
         /**
-         * Use sub dirs (true/false)
+         * caching (true/false)
          */
-        $this->use_sub_dirs = false;
+        $this->setCaching(false);
+
         /**
          * cache_dir -> cache
          */
-        $this->setCacheDir(self::setPath().PATHADMIN.'/caching/tpl_caches/');
-		/**
-		 * load pre filter
-		 */
-		//$this->load_filter('pre','magixmin');
-		//$this->autoload_filters = array('pre' => array('magixmin'));
-		$this->loadFilter('output', 'trimwhitespace');
-		///////
-        $this->loadPlugin('smarty_compiler_switch');
-		/**
-		 * 
-		 * @var error_reporting
-		 */
-		$this->error_reporting = error_reporting() &~E_NOTICE;
-		/**
-		 * Security
-		 */
-		//$this->enableSecurity();
-		/**
-		 * security settings
-		 */
-		//$this->enableSecurity('Security_Policy');
+        $this->setCacheDir($this->setPath().'/caching/tpl_caches/');
+
+	    parent::setParams();
 	}
+
+	/**
+	 * @return backend_model_smarty|component_core_smarty
+	 */
 	public static function getInstance(){
         if (!isset(self::$instance))
       {
@@ -163,4 +102,3 @@ class backend_model_smarty extends Smarty{
     	return self::$instance;
     }
 }
-?>

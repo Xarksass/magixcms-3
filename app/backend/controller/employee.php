@@ -28,13 +28,13 @@ class backend_controller_employee extends backend_db_employee
 
 	/**
 	 * backend_controller_employee constructor.
-	 * @param stdClass $t
+	 * @param backend_controller_template $t
 	 */
     function __construct($t = null)
     {
         $this->template = $t ? $t : new backend_model_template;
         $this->message = new component_core_message($this->template);
-		$this->data = new backend_model_data($this);
+		$this->data = new backend_model_data($this, $this->template);
         $this->header = new http_header();
         $formClean = new form_inputEscape();
         if (http_request::isPost('lastname_admin')) {

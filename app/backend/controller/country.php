@@ -6,7 +6,7 @@ class backend_controller_country extends backend_db_country
     public $id_country,$iso_country,$name_country, $order;
 
 	/**
-	 * @param stdClass $t
+	 * @param backend_controller_template $t
 	 * backend_controller_country constructor.
 	 */
     public function __construct($t)
@@ -14,7 +14,7 @@ class backend_controller_country extends backend_db_country
         $this->template = $t;
         $this->message = new component_core_message($this->template);
         $this->header = new http_header();
-        $this->data = new backend_model_data($this);
+        $this->data = new backend_model_data($this, $this->template);
         $formClean = new form_inputEscape();
         $this->arrayTools = new collections_ArrayTools();
 

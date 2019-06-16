@@ -1,0 +1,53 @@
+@radius: 100px;
+@strokew: 2px;
+@peri: 100% * 3.14159265358979;
+
+.svg-loader {
+  position: relative;
+
+  .is-labelled&:before {
+    content: attr(data-label);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #999;
+    font-size: 14px;
+  }
+
+  svg {
+    position: relative;
+    //height: (@radius*2) + (@strokew*2);
+    padding: @strokew*2;
+    overflow: visible;
+  }
+
+  .outer {
+    animation: outer 2s linear infinite, o-rotate 1s linear infinite;
+    transform-origin: center center;
+  }
+  circle {
+    fill: none;
+    stroke: hsl(219, 48%, 60%);
+    stroke-width: @strokew;
+  }
+  .ring-bg {
+    fill: none;
+    stroke: #eee;
+    stroke-width: @strokew;
+  }
+
+  @keyframes outer {
+    0% { stroke-dasharray: 1%,@peri; stroke-dashoffset: @peri * -0.5; }
+    50% { stroke-dasharray: @peri * 0.8,@peri; stroke-dashoffset: @peri * -0.1; }
+    100% { stroke-dasharray: 1%,@peri; stroke-dashoffset: @peri * -0.5; }
+  }
+  @keyframes o-rotate {
+    0% { transform: rotate(0); }
+    100% { transform: rotate(360deg); }
+  }
+}

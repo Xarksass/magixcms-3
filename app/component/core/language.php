@@ -33,15 +33,15 @@
  # needs please refer to http://www.magix-cms.com for more information.
  */
 
-class component_core_language{
+class component_core_language {
     /**
      * lang setting conf
-     * @var bool
+     * @var backend_model_template|frontend_model_template $template
      */
     protected $template,
 		$setLanguage,
         $getLanguage,
-        $setParams;
+        $setParams = 'lang';
 
 	/**
 	 * component_core_language constructor.
@@ -49,144 +49,55 @@ class component_core_language{
 	 */
 	public function __construct($t,$setParams){
 		$this->template = $t;
-        /*if(!empty($setParams)){
+        if(!empty($setParams)){
             $this->setParams = $setParams;
-            if (http_request::isGet($setParams)){
-                $this->getLanguage = $_GET[$setParams];
-            }
-        }*/
+        }
 	}
 
     /**
-     * Return language elseif default
-     * @return bool|string
-     */
-    public function setLanguage(){
-        if(isset($this->getLanguage)){
-            if(!empty($this->getLanguage)){
-                $lang = $_SESSION[$this->setParams];//form_inputFilter::isAlphaNumericMax($_SESSION[self::$setParams],5);
-            }
-            else {
-                $lang = 'fr';
-            }
-
-        }
-        else
-        	{
-            if(http_request::isSession($this->setParams)){
-                $lang = $_SESSION[$this->setParams];//form_inputFilter::isAlphaNumericMax($_SESSION[self::$setParams],5);
-            }
-            else {
-                $lang = 'fr';
-            }
-        }
-        return $lang;
-    }
-
-    /**
-     * @return array
-     */
-    private function getAcceptedLanguages() {
-        $httplanguages = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
-        $languages = array();
-        if (empty($httplanguages)) {
-            return $languages;
-        }
-
-        foreach (preg_split('/,\s*/', $httplanguages) as $accept) {
-            $result = preg_match('/^([a-z]{1,8}(?:[-_][a-z]{1,8})*)(?:;\s*q=(0(?:\.[0-9]{1,3})?|1(?:\.0{1,3})?))?$/i', $accept, $match);
-
-            if (!$result) {
-                continue;
-            }
-            if (isset($match[2])) {
-                $quality = (float)$match[2];
-            }
-            else {
-                $quality = 1.0;
-            }
-
-            $countries = explode('-', $match[1]);
-            $region = array_shift($countries);
-            $country_sub = explode('_', $region);
-            $region = array_shift($country_sub);
-
-            foreach($countries as $country)
-                $languages[$region . '_' . strtoupper($country)] = $quality;
-
-            foreach($country_sub as $country)
-                $languages[$region . '_' . strtoupper($country)] = $quality;
-
-            $languages[$region] = $quality;
-        }
-
-        return $languages;
-    }
-
-    /**
-     * @return array|int|string
+     *
      */
     private function initLang(){
-        /*$language = $this->template->lang;
-		$user_langs = explode(",",$_SERVER['HTTP_ACCEPT_LANGUAGE']);
-
-		foreach($user_langs as $ul) {
-			$iso = strtolower(substr(chop($ul),0,2));
-
-			if(array_key_exists($iso,$this->template->langs)) {
-				$language = $iso;
-				break;
-			}
-		}*/
-
-		/*if(empty($_SESSION[$this->setParams]) || !empty($this->getLanguage)) {
-            return $_SESSION[$this->setParams] = empty($this->getLanguage) ? $language : $this->getLanguage;
-		}
-		else {
-			return $this->getLanguage = $language;
-		}*/
-		if(empty($_SESSION[$this->setParams])) $_SESSION[$this->setParams] = $this->template->lang;
+        $this->template->currentLanguage($this->setParams);
+        $this->setTimeLocal();
 	}
 
     /**
-     * Retourne l'OS courant si windows
-     */
-    private function getOS(){
-        if(stripos($_SERVER['HTTP_USER_AGENT'],'win')){
-            return 'windows';
-        }
-    }
-
-    /**
-     * Modification du setlocale suivant la langue courante pour les dates
+     * Change setlocale based on the curent language
+     * Use for the format of the dates
      */
     private function setTimeLocal(){
-        if($this->template->lang == 'nl'){
-            setlocale(LC_TIME, 'nl_NL.UTF8','nl');
-        }elseif($this->template->lang == 'fr' || $this->template->lang == 'fr-ca'){
-            setlocale(LC_TIME, 'fr_FR.UTF8', 'fra');
-        }elseif($this->template->lang == 'de'){
-            setlocale(LC_TIME, 'de_DE.UTF8', 'de');
-        }elseif($this->template->lang == 'es'){
-            setlocale(LC_TIME, 'es_ES.UTF8', 'es');
-        }elseif($this->template->lang == 'it'){
-            setlocale(LC_TIME, 'it_IT.UTF8', 'it');
-        }else{
-            setlocale(LC_TIME, 'en_US.UTF8', 'en');
+        $locale = 'en_US.UTF8';
+        $iso = 'en';
+
+        switch ($this->template->lang) {
+            case 'nl':
+                $locale = 'nl_NL.UTF8'; $iso = 'nl';
+                break;
+            case 'fr' :
+            case 'fr-ca':
+                $locale = 'fr_FR.UTF8'; $iso = 'fra';
+                break;
+            case 'de':
+                $locale = 'de_DE.UTF8'; $iso = 'de';
+                break;
+            case 'es':
+                $locale = 'es_ES.UTF8'; $iso = 'es';
+                break;
+            case 'it':
+                $locale = 'it_IT.UTF8'; $iso = 'it';
+                break;
+            default:
+                continue;
         }
+
+        setlocale(LC_TIME, $locale, $iso);
     }
 
     /**
-     * Initialisation de la création de session de langue
-     * @param bool $debug
+     * Initialisation de la création du paramètre de session de la langue
      */
-    public function run($debug = false){
-        $session = new http_session(0);
-        $session->start('lang');
-        if($debug){
-            $session->debug();
-        }
+    public function run(){
         $this->initLang();
-        $this->setTimeLocal();
 	}
 }

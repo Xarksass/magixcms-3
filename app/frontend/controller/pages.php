@@ -48,14 +48,14 @@ class frontend_controller_pages extends frontend_db_pages {
 
 	/**
 	 * frontend_controller_pages constructor.
-	 * @param stdClass $t
+	 * @param frontend_controller_template $t
 	 */
     public function __construct($t = null){
 		$this->template = $t ? $t : new frontend_model_template();
 		$formClean = new form_inputEscape();
         $this->header = new component_httpUtils_header($this->template);
         $this->data = new frontend_model_data($this);
-        $this->getlang = $this->template->currentLanguage();
+        $this->getlang = $this->template->lang;
         $this->modelPages = new frontend_model_pages($this->template);
         if (http_request::isGet('id')) {
             $this->id = $formClean->numeric($_GET['id']);

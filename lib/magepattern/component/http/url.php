@@ -68,22 +68,13 @@ class http_url{
      */
     public static function getUrl($requestUri = false){
         /*** check for https ***/
-        if(isset($_SERVER['HTTPS']) == 'on'){
-            $isHttps = 'https';
-        }else{
-            $isHttps = 'http';
-        }
+        $protocol = isset($_SERVER['HTTPS']) == 'on' ? 'https' : 'http';
+        $source = '://'.$_SERVER['HTTP_HOST'];
         if($requestUri){
             /*** return the full address ***/
-            $source = '://';
-            $source .= $_SERVER['HTTP_HOST'];
             $source .= $_SERVER['REQUEST_URI'];
-        }else{
-            $source = '://';
-            $source .= $_SERVER['HTTP_HOST'];
         }
-        //$_SERVER["SERVER_NAME"]
-        $path = $isHttps.$source;
+        $path = $protocol.$source;
         return $path;
     }
 

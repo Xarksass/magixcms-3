@@ -136,10 +136,15 @@ class form_inputEscape{
         if(is_array($array)){
             foreach($array as $key => $val) {
                 if (!is_array($array[$key])) {
-                    $array[$key] = self::simpleClean($val);
+                    if(strpos('content',$key) === false) {
+                        $array[$key] = self::simpleClean($val);
+                    }
+                    else {
+                        $array[$key] = self::cleanQuote($val);
+                    }
                 }
                 else{
-                    $array[$key] = self::arrayClean($array[$key]);
+                    $array[$key] = self::arrayClean($val);
                 }
             }
             return $array;
@@ -163,4 +168,3 @@ class form_inputEscape{
         return $array;
     }
 }
-?>

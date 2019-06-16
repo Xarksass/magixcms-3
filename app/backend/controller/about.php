@@ -43,7 +43,7 @@ class backend_controller_about extends backend_db_about{
         ),
         'corp' 		=> array(
             'schema' => 'Corporation',
-            'label' => 'Société'
+            'label' => 'Société commerciale'
         ),
         'store' 	=> array(
             'schema' => 'Store',
@@ -170,7 +170,7 @@ class backend_controller_about extends backend_db_about{
         $this->template = $t ? $t : new backend_model_template;
         $this->message = new component_core_message($this->template);
         $this->header = new http_header();
-        $this->data = new backend_model_data($this);
+        $this->data = new backend_model_data($this, $this->template);
         $formClean = new form_inputEscape();
         $this->modelLanguage = new backend_model_language($this->template);
         $this->collectionLanguage = new component_collections_language();

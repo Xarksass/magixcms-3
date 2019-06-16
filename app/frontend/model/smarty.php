@@ -50,135 +50,62 @@
  * Extend class smarty
  *
  */
-class frontend_model_smarty extends Smarty{
+class frontend_model_smarty extends component_core_smarty {
 	/**
-    * Variable statique permettant de porter l'instance unique
-    */
-    static protected $instance;
-    protected $template;
-	/**
-	 * function construct class
-	 *
+	 * frontend_model_smarty constructor.
 	 */
-	public function __construct(){
+	public function __construct($t = null){
+		$this->template = $t;
 		/**
-		 * include parent var smarty
+		 * include parent component_core_smarty
 		 */
-		parent::__construct(); 
-		self::setParams();
-		/*
-		 You can remove this comment, if you prefer this JSP tag style
-		 instead of the default { and }
-		 $this->left_delimiter =  '<%';
-		 $this->right_delimiter = '%>';
-		 */
+		parent::__construct();
+		//self::setParams();
 	}
-	private function setPath(){
-		return component_core_system::basePath();
+
+	public function setPath(){
+		return parent::setPath();
 	}
+
 	/**
 	 * Les paramètres pour la configuration de smarty 3
 	 */
 	protected function setParams(){
-        $template = new frontend_model_template();
-		/**
-		 * Path -> configs
-		 */
-        $this->setConfigDir(array(
-            self::setPath()."locali18n/",
-            self::setPath() . "skin/" . $template->theme . '/i18n/'
-        ));
-		/**
-         * additionnal Path -> configs
-         */
-
-        /*if(file_exists(self::setPath()."skin/".$template->themeSelected().'/i18n/')) {
-            $this->addConfigDir([
-                self::setPath() . "skin/" . $template->themeSelected() . '/i18n/'
-            ]);
-        }*/
-		/**
-		 * Path -> templates
-		 */
-        $this->setTemplateDir(array(
-            self::setPath()."skin/".$template->theme.'/'
-        ));
-
 		/**
 		 * path plugins
 		 * @var void
 		 */
-        $this->setPluginsDir(array(
-			self::setPath().'lib/smarty3/plugins/'
-			,self::setPath().'app/wdcore/'
-			,self::setPath().'widget/'
+		$this->addPluginsDir(array(
+			self::setPath().'widget/'
 		));
-		/**
-		 * Ajout du dossier additionnels des plugins smarty dans le template courant
-		 */
-        $template->addWidgetDir(
-            $this,
-            self::setPath(),
-            false
-        );
+
 		/**
 		 * Path -> compile
 		 */
         $this->setCompileDir(
             self::setPath().'var/templates_c/'
         );
-		/**
-		 * debugging (true/false)
-		 */
-		$this->debugging = false;
-		/**
-		 * compile (true/false)
-		 */
-		$this->compile_check = true;
-		/**
-		 * Force compile
-		 * @var void
-		 * (true/false)
-		 */
-		$this->force_compile = false;
+
 		/**
 		 * caching (true/false)
 		 */
-        $template->setCache($this);
+        $this->template->setCache($this);
         //$this->setCaching(false);
         //$this->setCachingType('apc');
 
-		/**
-		 * Use sub dirs (true/false)
-		 */
-		$this->use_sub_dirs = false;
 		/**
 		 * cache_dir -> cache
 		 */
         $this->setCacheDir(
             self::setPath().'var/tpl_caches/'
         );
-		/**
-		 * load pre filter
-		 */
-		//$this->load_filter('pre','magixmin');
-		$this->autoload_filters = array('pre' => array('magixmin'));
-		$this->loadFilter('output', 'trimwhitespace');
-        $this->loadPlugin('smarty_compiler_switch');
-		/**
-		 * 
-		 * @var error_reporting
-		 */
-		$this->error_reporting = error_reporting() &~E_NOTICE;
-		/**
-		 * Security
-		 */
-		//$this->enableSecurity();
-		/**
-		 * security settings
-		 */
-		//$this->enableSecurity('Security_Policy');
+
+		parent::setParams();
 	}
+
+	/**
+	 * @return frontend_model_smarty|component_core_smarty
+	 */
 	public static function getInstance(){
         if (!isset(self::$instance))
       {

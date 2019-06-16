@@ -7,7 +7,7 @@ class frontend_controller_catalog extends frontend_db_catalog {
     public $getlang,$id,$id_parent;
 
     /**
-	 * @param stdClass $t
+	 * @param frontend_controller_template $t
      * frontend_controller_pages constructor.
      */
     public function __construct($t = null){

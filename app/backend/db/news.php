@@ -16,6 +16,12 @@ class backend_db_news
 
 		if ($config['context'] === 'all') {
 			switch ($config['type']) {
+                case 'root_contents':
+                    $sql = 'SELECT np.*,npc.*
+							FROM mc_news_page AS np
+							JOIN mc_news_page_content AS npc USING(id_page)
+							JOIN mc_lang AS lang ON(npc.id_lang = lang.id_lang)';
+                    break;
 				case 'page':
 					$sql = "SELECT p.* , c.* , lang.* , rel.tags_news
 							FROM mc_news AS p
@@ -119,11 +125,24 @@ class backend_db_news
 		elseif ($config['context'] === 'one') {
 			switch ($config['type']) {
 				case 'root':
-					$sql = 'SELECT * FROM mc_news ORDER BY id_news DESC LIMIT 0,1';
+					$sql = 'SELECT * FROM mc_news_page ORDER BY id_page DESC LIMIT 0,1';
 					break;
+				case 'root_content':
+					$sql = 'SELECT * FROM `mc_news_page_content` WHERE `id_page` = :id_page AND `id_lang` = :id_lang';
+					break;
+                case 'last':
+                    $sql = 'SELECT * FROM mc_news ORDER BY id_news DESC LIMIT 0,1';
+                    break;
 				case 'page':
 					$sql = 'SELECT * FROM mc_news WHERE `id_news` = :id_news';
 					break;
+                case 'page_content':
+                    $sql = 'SELECT p.*,c.*,lang.*
+                        FROM mc_news AS p
+                        JOIN mc_news_content AS c USING(id_news)
+                        JOIN mc_lang AS lang ON(c.id_lang = lang.id_lang)
+                        WHERE `id_news` = :id_news AND c.`id_lang` = :id_lang';
+                    break;
 				case 'content':
 					$sql = 'SELECT * FROM `mc_news_content` WHERE `id_news` = :id_news AND `id_lang` = :id_lang';
 					break;
@@ -143,6 +162,9 @@ class backend_db_news
 							WHERE p.id_news = :id
 							AND lang.iso_lang = :iso';
 					break;
+                case 'nb_pages':
+                    $sql = "SELECT COUNT(p.id_news) as nb FROM mc_news AS p";
+                    break;
 			}
 
 			return $sql ? component_routing_db::layer()->fetch($sql, $params) : null;
@@ -161,6 +183,13 @@ class backend_db_news
 		$sql = '';
 
 		switch ($config['type']) {
+            case 'root':
+                $sql = 'INSERT INTO `mc_news_page`(`date_register`) VALUES (NOW())';
+                break;
+            case 'content_root':
+                $sql = 'INSERT INTO `mc_news_page_content`(id_page,id_lang,title_page,content_page,seo_title_page,seo_desc_page,published) 
+				  		VALUES (:id_page,:id_lang,:title_page,:content_page,:seo_title_page,:seo_desc_page,:published)';
+                break;
 			case 'newTagComb':
 				$queries = array(
 					array('request'=>'INSERT INTO mc_news_tag (id_lang,name_tag) VALUE (:id_lang,:name_tag)','params'=>array('id_lang' => $params['id_lang'],'name_tag' => $params['name_tag'])),
@@ -215,6 +244,10 @@ class backend_db_news
 		$sql = '';
 
 		switch ($config['type']) {
+            case 'content_root':
+                $sql = 'UPDATE mc_news_page_content SET title_page = :title_page, content_page=:content_page, seo_title_page=:seo_title_page, seo_desc_page=:seo_desc_page, published=:published
+                		WHERE id_page = :id_page AND id_lang = :id_lang';
+                break;
 			case 'content':
 				$sql = 'UPDATE mc_news_content 
 						SET 

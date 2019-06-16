@@ -69,7 +69,7 @@ class frontend_model_seo extends frontend_db_seo {
 		$this->attribute = $attribute;
 		$this->level = $level;
 		$this->type = $type;
-		$this->iso = $this->template->currentLanguage();
+		$this->iso = $this->template->lang;
 	}
 
 	/**

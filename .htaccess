@@ -59,17 +59,6 @@
   </FilesMatch>
 </IfModule>
 # ----------------------------------------------------------------------
-# | Rewrite engine |
-# ----------------------------------------------------------------------
-<IfModule mod_rewrite.c>
-    #Options +FollowSymLinks
-    RewriteEngine On
-
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-
-</IfModule>
-# ----------------------------------------------------------------------
 # | Expires headers                                                    |
 # ----------------------------------------------------------------------
 # BEGIN Expire headers
@@ -231,6 +220,7 @@ AddDefaultCharset utf-8
     RewriteCond %{HTTP_HOST} !^(?:[-_0-9a-zA-Z]+\.){2,}
     RewriteRule ^(.*)$ http://www.%{HTTP_HOST}/$1 [R=301,L]
 </IfModule>
+
 DirectoryIndex index.php
 #RewriteBase /
 # ----------------------------------------------------------------------
@@ -242,49 +232,58 @@ ErrorDocument 401 /index.php?http_error=401
 ErrorDocument 403 /index.php?http_error=403
 ErrorDocument 404 /index.php?http_error=404
 ErrorDocument 500 /index.php?http_error=500
+
 # ----------------------------------------------------------------------
-# Redirect Rewrite
+# | Rewrite engine |
 # ----------------------------------------------------------------------
-# RewriteRule ^fr/catalog/$ http://www.magixcms3.test/fr/news/ [R=301,L]
-# Redirect a plus sign
-# RewriteRule	^fr/actualites/tag/magix[\s+]cms[\s+]3	http://www.magixcms3.test/fr/news/tag/39-magix-cms-3/	[R=301,L]
-# ----------------------------------------------------------------------
-# Language
-RewriteCond %{REQUEST_URI} !^/(admin|install|skin|media|upload|amp|img)
-RewriteCond %{QUERY_STRING} !(strLangue)+
-RewriteRule ^([-_a-zA-Z]{1,5})/(.*) 										/$2?strLangue=$1		[QSA,L]
-# AMP
-RewriteCond %{REQUEST_URI} ^/amp
-RewriteRule ^(?:amp)/(.*) 										/$1?amp=1		[QSA,L]
-# Web Service
-RewriteRule ^webservice/{0,1}$ %{ENV:REWRITEBASE}/index.php?controller=webservice [QSA,L]
-RewriteRule ^webservice[/]([a-zA-Z]+)/{0,1}$ %{ENV:REWRITEBASE}/index.php?controller=webservice&collection=$1 [QSA,L]
-RewriteRule ^webservice[/]([a-zA-Z]+)[/]([0-9]+)/{0,1}$ %{ENV:REWRITEBASE}/index.php?controller=webservice&collection=$1&id=$2 [QSA,L]
-RewriteRule ^webservice[/]([a-zA-Z]+)[/]([0-9]+)/{0,1}$ %{ENV:REWRITEBASE}/index.php?controller=webservice&collection=$1&id=$2&action=$3 [QSA,L]
-RewriteRule ^webservice[/]([a-zA-Z]+)[/]([a-zA-Z]+)/{0,1}$ %{ENV:REWRITEBASE}/index.php?controller=webservice&collection=$1&retrieve=$2 [QSA,L]
-RewriteRule ^webservice[/]([a-zA-Z]+)[/]([a-zA-Z]+)[/]([0-9]+)/{0,1}$ %{ENV:REWRITEBASE}/index.php?controller=webservice&collection=$1&retrieve=$2&id=$3 [QSA,L]
-# Pagination
-RewriteCond %{QUERY_STRING} !(page)+
-RewriteRule (.*)/page/(\d*)/{0,1}$ /$1?page=$2 [QSA,L]
-# News tags
-RewriteCond %{QUERY_STRING} !(tag)+
-RewriteRule (.*)/tag/([/0-9]+)[-]([-_0-9a-zA-Z]+)/{0,1}$ /$1?tag=$2 [QSA,L]
-# id page and id parent page
-RewriteCond %{QUERY_STRING} ^(id=)|(&id=)+
-RewriteRule (.*)/([/0-9]+)[-]([-_0-9a-zA-Z]+)/{0,1}$ /$1?id_parent=$2&url_parent=$3 [QSA,L]
-RewriteRule (.*)/([/0-9]+)[-]([-_0-9a-zA-Z]+)/{0,1}$ /$1?id=$2&url=$3 [QSA,L]
-# Date and year
-RewriteRule (.*)/(\d{4}/\d{2}/\d{2})/{0,1}$ /$1?date=$2 [QSA,L]
-RewriteCond %{QUERY_STRING} !(date)+
-RewriteRule (.*)/(\d{4})/(\d{2})/{0,1}$ /$1?year=$2&month=$3 [QSA,L]
-RewriteCond %{QUERY_STRING} !(year)+
-RewriteRule (.*)/(\d{4})/{0,1}$ /$1?year=$2 [QSA,L]
-# Custom action
-RewriteCond %{QUERY_STRING} !(action)+
-RewriteRule (.*)/([0-9a-zA-Z]+)/{0,1}$ /$1?action=$2 [QSA,L]
-# Custom hash key
-RewriteCond %{QUERY_STRING} !(hash)+
-RewriteRule (.*)/([0-9a-zA-Z]+)/{0,1}$ /$1?hash=$2 [QSA,L]
-# Controller
-RewriteCond %{REQUEST_URI} !^/(admin|install|skin|media|upload|amp|img)
-RewriteRule ^([0-9a-zA-Z]+)/{0,1}$ /index.php?controller=$1 [QSA,L]
+<IfModule mod_rewrite.c>
+    #Options +FollowSymLinks
+    RewriteEngine On
+	# ----------------------------------------------------------------------
+	# RewriteRule ^fr/catalog/$ http://www.magixcms3.test/fr/news/ [R=301,L]
+	# Redirect a plus sign
+	# RewriteRule	^fr/actualites/tag/magix[\s+]cms[\s+]3	http://www.magixcms3.test/fr/news/tag/39-magix-cms-3/	[R=301,L]
+	# ----------------------------------------------------------------------
+	# Language
+	RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+	RewriteCond %{REQUEST_URI} !^/amp
+	RewriteCond %{QUERY_STRING} !(strLangue)+
+	RewriteRule ^([-_a-zA-Z]{1,5})/(.*) 										/$2?strLangue=$1		[QSA,L]
+	# AMP
+	RewriteCond %{REQUEST_URI} ^/amp
+	RewriteRule ^(?:amp)/(.*) 										/$1?amp=1		[QSA,L]
+	# Web Service
+	RewriteRule ^webservice/{0,1}$ %{ENV:REWRITEBASE}/index.php?controller=webservice [QSA,L]
+	RewriteRule ^webservice[/]([a-zA-Z]+)/{0,1}$ %{ENV:REWRITEBASE}/index.php?controller=webservice&collection=$1 [QSA,L]
+	RewriteRule ^webservice[/]([a-zA-Z]+)[/]([0-9]+)/{0,1}$ %{ENV:REWRITEBASE}/index.php?controller=webservice&collection=$1&id=$2 [QSA,L]
+	RewriteRule ^webservice[/]([a-zA-Z]+)[/]([0-9]+)/{0,1}$ %{ENV:REWRITEBASE}/index.php?controller=webservice&collection=$1&id=$2&action=$3 [QSA,L]
+	RewriteRule ^webservice[/]([a-zA-Z]+)[/]([a-zA-Z]+)/{0,1}$ %{ENV:REWRITEBASE}/index.php?controller=webservice&collection=$1&retrieve=$2 [QSA,L]
+	RewriteRule ^webservice[/]([a-zA-Z]+)[/]([a-zA-Z]+)[/]([0-9]+)/{0,1}$ %{ENV:REWRITEBASE}/index.php?controller=webservice&collection=$1&retrieve=$2&id=$3 [QSA,L]
+	# Pagination
+	RewriteCond %{QUERY_STRING} !(page)+
+	RewriteRule (.*)/page/(\d*)/{0,1}$ /$1?page=$2 [QSA,L]
+	# News tags
+	RewriteCond %{QUERY_STRING} !(tag)+
+	RewriteRule (.*)/tag/([/0-9]+)[-]([-_0-9a-zA-Z]+)/{0,1}$ /$1?tag=$2 [QSA,L]
+	# id page and id parent page
+	RewriteCond %{QUERY_STRING} ^(id=)|(&id=)+
+	RewriteRule (.*)/([/0-9]+)[-]([-_0-9a-zA-Z]+)/{0,1}$ /$1?id_parent=$2&url_parent=$3 [QSA,L]
+	RewriteRule (.*)/([/0-9]+)[-]([-_0-9a-zA-Z]+)/{0,1}$ /$1?id=$2&url=$3 [QSA,L]
+	# Date and year
+	RewriteRule (.*)/(\d{4}/\d{2}/\d{2})/{0,1}$ /$1?date=$2 [QSA,L]
+	RewriteCond %{QUERY_STRING} !(date)+
+	RewriteRule (.*)/(\d{4})/(\d{2})/{0,1}$ /$1?year=$2&month=$3 [QSA,L]
+	RewriteCond %{QUERY_STRING} !(year)+
+	RewriteRule (.*)/(\d{4})/{0,1}$ /$1?year=$2 [QSA,L]
+	# Custom action
+	RewriteCond %{QUERY_STRING} !(action)+
+	RewriteRule (.*)/([0-9a-zA-Z]+)/{0,1}$ /$1?action=$2 [QSA,L]
+	# Custom hash key
+	RewriteCond %{QUERY_STRING} !(hash)+
+	RewriteRule (.*)/([0-9a-zA-Z]+)/{0,1}$ /$1?hash=$2 [QSA,L]
+	# Controller
+	RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+	RewriteRule ^([0-9a-zA-Z]+)/{0,1}$ /index.php?controller=$1 [QSA,L]
+</IfModule>

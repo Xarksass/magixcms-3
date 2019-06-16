@@ -47,7 +47,7 @@ class frontend_controller_about extends frontend_db_about {
     public $getlang,$id;
 
     /**
-	 * @param stdClass $t
+	 * @param frontend_controller_template $t
      * frontend_controller_pages constructor.
      */
     public function __construct($t = null){

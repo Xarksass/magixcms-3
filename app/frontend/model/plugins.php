@@ -4,7 +4,7 @@ class frontend_model_plugins{
 
 	/**
 	 * frontend_model_plugins constructor.
-	 * @param stdClass $t
+	 * @param frontend_controller_template $t
 	 */
     public function __construct($t = null)
     {

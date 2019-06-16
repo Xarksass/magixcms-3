@@ -47,7 +47,7 @@ class frontend_model_catalog extends frontend_db_catalog {
 
 	/**
 	 * frontend_model_catalog constructor.
-	 * @param stdClass $t
+	 * @param frontend_controller_template $t
 	 */
     public function __construct($t = null)
     {

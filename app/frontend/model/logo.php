@@ -39,13 +39,13 @@ class frontend_model_logo extends frontend_db_logo {
 
     /**
      * frontend_model_domain constructor.
-     * @param stdClass $t
+     * @param frontend_controller_template $t
      */
     public function __construct($t = null)
     {
         $this->template = $t ? $t : new frontend_model_template();
         $this->data = new frontend_model_data($this,$this->template);
-        $this->iso = $this->template->currentLanguage();
+        $this->iso = $this->template->lang;
         $this->imagesComponent = new component_files_images($this->template);
         $this->finder = new file_finder();
     }
@@ -132,6 +132,24 @@ class frontend_model_logo extends frontend_db_logo {
     /**
      * @return array
      */
+    public function getHomescreen(){
+        $newData = array();
+        /* ##### homescreen ######*/
+        $collection = $this->finder->scanDir(component_core_system::basePath().'/img/touch/','.gitignore');
+        if(is_array($collection)) {
+            foreach ($collection as $key => $value) {
+                $size = $this->imagesComponent->getImageInfos(component_core_system::basePath() . '/img/touch/' . $value);
+                $newData['img'][$size['width']]['src'] = '/img/touch/' . $value;
+                $newData['img'][$size['width']]['w'] = $size['width'];
+                $newData['img'][$size['width']]['h'] = $size['height'];
+            }
+        }
+        return $newData;
+    }
+
+    /**
+     * @return array
+     */
     public function getImagePlaceholder(){
         $newData = array();
         $module = array('category','product','news','pages');
@@ -145,5 +163,19 @@ class frontend_model_logo extends frontend_db_logo {
             }
         }
         return $newData;
+    }
+
+    /**
+     * @return array
+     */
+    public function getImageSocial(){
+        $newData = array();
+        if(file_exists(component_core_system::basePath() . '/img/social/' . 'social.jpg')) {
+            $size = $this->imagesComponent->getImageInfos(component_core_system::basePath() . '/img/social/' . 'social.jpg');
+            $newData['img']['src'] = '/img/social/' . 'social.jpg';
+            $newData['img']['w'] = $size['width'];
+            $newData['img']['h'] = $size['height'];
+            return $newData;
+        }
     }
 }

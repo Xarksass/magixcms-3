@@ -5,7 +5,7 @@ class frontend_model_collection{
 
 	/**
 	 * frontend_model_collection constructor.
-	 * @param stdClass $t
+	 * @param frontend_controller_template $t
 	 */
     public function __construct($t = null)
     {

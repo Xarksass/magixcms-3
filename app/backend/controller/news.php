@@ -5,20 +5,20 @@ class backend_controller_news extends backend_db_news
     protected $message, $template, $header, $data, $modelLanguage, $collectionLanguage, $order, $upload, $config, $imagesComponent, $modelPlugins,$makeFiles,$finder,$routingUrl;
     public $id_news,$content,$news,$img,$id_lang,$name_tag,$del_img,$ajax,$tableaction,$tableform,$iso,$name_img;
 	public $tableconfig = array(
-		'id_news',
+		'id_news' => array('title' => 'id'),
 		'name_news',
-		'content_news' => ['type' => 'bin', 'input' => null],
-		'img_news' => ['type' => 'bin', 'input' => null, 'class' => ''],
-        'seo_title_news' => array('title' => 'seo_title', 'class' => '', 'type' => 'bin', 'input' => null),
-        'seo_desc_news' => array('title' => 'seo_desc', 'class' => '', 'type' => 'bin', 'input' => null),
-		'last_update' => ['title' => 'last_update', 'input' => ['type' => 'text', 'class' => 'date-input']],
+		'content_news' => array('type' => 'bin', 'input' => array('type' => 'select', 'var' => true, 'values' => array(array('v' => '0'), array('v' => '1'))), 'enum' => 'bin_', 'class' => 'text-center'),
+		'img_news' => array('type' => 'bin', 'input' => array('type' => 'select', 'var' => true, 'values' => array(array('v' => '0'), array('v' => '1'))), 'enum' => 'bin_', 'class' => 'text-center'),
+        'seo_title_news' => array('type' => 'bin', 'input' => array('type' => 'select', 'var' => true, 'values' => array(array('v' => '0'), array('v' => '1'))), 'enum' => 'bin_', 'class' => 'text-center'),
+        'seo_desc_news' => array('type' => 'bin', 'input' => array('type' => 'select', 'var' => true, 'values' => array(array('v' => '0'), array('v' => '1'))), 'enum' => 'bin_', 'class' => 'text-center'),
+		'last_update' => array('input' => array('type' => 'text', 'class' => 'date-input')),
 		'date_publish',
 		'published_news'
 	);
 
     /**
      * backend_controller_news constructor.
-     * @param null|object $t
+     * @param backend_model_template $t
      * @throws Exception
      */
     public function __construct($t = null)
@@ -27,7 +27,7 @@ class backend_controller_news extends backend_db_news
         $this->lang = $this->template->lang;
         $this->message = new component_core_message($this->template);
         $this->header = new http_header();
-        $this->data = new backend_model_data($this);
+        $this->data = new backend_model_data($this, $this->template);
         $formClean = new form_inputEscape();
         $this->modelLanguage = new backend_model_language($this->template);
         $this->collectionLanguage = new component_collections_language();
@@ -61,15 +61,7 @@ class backend_controller_news extends backend_db_news
         if (http_request::isGet('id')) $this->id_news = $formClean->simpleClean($_GET['id']);
         elseif (http_request::isPost('id')) $this->id_news = $formClean->simpleClean($_POST['id']);
         if (http_request::isPost('del_img')) $this->del_img = $formClean->simpleClean($_POST['del_img']);
-        if (http_request::isPost('content')) {
-            $array = $_POST['content'];
-            foreach($array as $key => $arr) {
-                foreach($arr as $k => $v) {
-                    $array[$key][$k] = ($k == 'content_news') ? $formClean->cleanQuote($v) : $formClean->simpleClean($v);
-                }
-            }
-            $this->content = $array;
-        }
+        if (http_request::isPost('content')) $this->content = (array)$formClean->arrayClean($_POST['content']);
         // --- Image Upload
         if (isset($_FILES['img']["name"])) $this->img = http_url::clean($_FILES['img']["name"]);
 		if (http_request::isPost('name_img')) $this->name_img = http_url::clean($_POST['name_img']);
@@ -152,6 +144,32 @@ class backend_controller_news extends backend_db_news
 		$this->template->assign('news',$lists);
 		$this->template->display('tinymce/news/mc_news.tpl');
 	}
+
+    /**
+     * @return array
+     */
+    private function setRootData($id){
+        $data = $this->getItems('root_contents',null,'all',false);
+        $arr = array();
+        foreach ($data as $page) {
+            if($page['id_page'] === $id) {
+                if (!array_key_exists($id, $arr)) {
+                    $arr[$id] = array();
+                    $arr[$id]['id_page'] = $page['id_page'];
+                    $arr[$id]['date_register'] = $page['date_register'];
+                }
+                $arr[$id]['content'][$page['id_lang']] = array(
+                    'id_lang' => $page['id_lang'],
+                    'title_page' => $page['title_page'],
+                    'content_page' => $page['content_page'],
+                    'seo_title_page' => $page['seo_title_page'],
+                    'seo_desc_page' => $page['seo_desc_page'],
+                    'published' => $page['published']
+                );
+            }
+        }
+        return $arr[$id];
+    }
 
     /**
      * Return Last pages (Dashboard)
@@ -270,10 +288,12 @@ class backend_controller_news extends backend_db_news
 			$data['id_lang'] = $lang;
 			$data['id_news'] = $id;
 			$data['published_news'] = (!isset($content['published_news']) ? 0 : 1);
-			$content['resume_news'] = (!empty($content['resume_news']) ? $content['resume_news'] : NULL);
-			$content['content_news'] = (!empty($content['content_news']) ? $content['content_news'] : NULL);
-			$content['seo_title_news'] = (!empty($content['seo_title_news']) ? $content['seo_title_news'] : NULL);
-			$content['seo_desc_news'] = (!empty($content['seo_desc_news']) ? $content['seo_desc_news'] : NULL);
+			$data['resume_news'] = (!empty($content['resume_news']) ? $content['resume_news'] : NULL);
+			$data['content_news'] = (!empty($content['content_news']) ? $content['content_news'] : NULL);
+			$data['seo_title_news'] = (!empty($content['seo_title_news']) ? $content['seo_title_news'] : NULL);
+			$data['seo_desc_news'] = (!empty($content['seo_desc_news']) ? $content['seo_desc_news'] : NULL);
+            unset($data['img']);
+
 			if (empty($content['url_news'])) {
 				$data['url_news'] = http_url::clean($content['name_news'],
 					array(
@@ -337,9 +357,18 @@ class backend_controller_news extends backend_db_news
 					}
 				}
 
-				$setEditData = $this->getItems('page', array('edit'=>$this->id_news),'all',false);
-				$setEditData = $this->setItemData($setEditData);
-				$extendData[$lang] = $setEditData[$this->id_news]['content'][$lang]['public_url'];
+				$page = $this->getItems('page_content', array('id_news'=>$id, 'id_lang'=>$lang),'one',false);
+                $public_url = !empty($page['url_news']) ? $this->routingUrl->getBuildUrl(array(
+                    'type' => 'news',
+                    'iso'  => $page['iso_lang'],
+                    'date' => $page['date_publish'],
+                    'id'   => $page['id_news'],
+                    'url'  => $page['url_news']
+                )) : '';
+                $extendData[$lang] = array(
+                    'uri' => $page['url_news'],
+                    'url' => $public_url
+                );
 			}
 		}
 
@@ -353,6 +382,7 @@ class backend_controller_news extends backend_db_news
 	private function add($data)
 	{
 		switch ($data['type']) {
+            case 'root':
 			case 'page':
 				parent::insert(
 					array(
@@ -360,17 +390,18 @@ class backend_controller_news extends backend_db_news
 					)
 				);
 				break;
+            case 'content_root':
+            case 'content':
 			case 'newTagRel':
 			case 'newTagComb':
-			case 'content':
-				parent::insert(
-					array(
-						'type' => $data['type']
-					),
-					$data['data']
-				);
-				break;
-		}
+                parent::insert(
+                    array(
+                        'type' => $data['type']
+                    ),
+                    $data['data']
+                );
+                break;
+        }
 	}
 
     /**
@@ -380,6 +411,7 @@ class backend_controller_news extends backend_db_news
     private function upd($data)
     {
         switch ($data['type']) {
+            case 'content_root':
             case 'content':
             case 'img':
 			case 'imgContent':
@@ -418,6 +450,7 @@ class backend_controller_news extends backend_db_news
 				break;
         }
     }
+
     /**
      *
      */
@@ -454,114 +487,162 @@ class backend_controller_news extends backend_db_news
 			elseif (isset($this->action)) {
                 switch ($this->action) {
                     case 'add':
-						if(isset($this->content)) {
-							$this->add(
-								array(
-									'type' => 'page'
-								)
-							);
-
-							$page = $this->getItems('root',null,'one',false);
-
-							if ($page['id_news']) {
-								$this->saveContent($page['id_news']);
-								$this->message->json_post_response(true,'add_redirect');
-							}
-						}
-						else {
-							$this->modelLanguage->getLanguage();
-							$defaultLanguage = $this->collectionLanguage->fetchData(array('context'=>'one','type'=>'default'));
-							$this->getItems('pagesSelect',array('default_lang'=>$defaultLanguage['id_lang']),'all');
-							$this->template->display('news/add.tpl');
-						}
-                        break;
                     case 'edit':
-						if(isset($this->img) || isset($this->name_img)){
-							$defaultLanguage = $this->collectionLanguage->fetchData(array('context' => 'one', 'type' => 'default'));
-							$page = $this->getItems('pageLang', array('id' => $this->id_news, 'iso' => $defaultLanguage['iso_lang']), 'one', false);
-							$settings = array(
-								'name' => $this->name_img !== '' ? $this->name_img : $page['url_news'],
-								'edit' => $page['img_news'],
-								'prefix' => array('s_', 'm_', 'l_'),
-								'module_img' => 'news',
-								'attribute_img' => 'news',
-								'original_remove' => false
-							);
-							$dirs = array(
-								'upload_root_dir' => 'upload/news', //string
-								'upload_dir' => $this->id_news //string ou array
-							);
-							$filename = '';
-							$update = false;
+                        $saved = false;
+                        $defaultLanguage = $this->collectionLanguage->fetchData(array('context'=>'one','type'=>'default'));
 
-							if(isset($this->img)) {
-								$resultUpload = $this->upload->setImageUpload('img', $settings, $dirs, false);
-								$filename = $resultUpload['file'];
-								$update = true;
-							}
-							elseif(isset($this->name_img)) {
-								$img_pages = pathinfo($page['img_news']);
-								$img_name = $img_pages['filename'];
+                        if(!empty($this->content[$defaultLanguage['id_lang']]['name_news'])) {
+                            $display = null;
 
-								if($this->name_img !== $img_name && $this->name_img !== '') {
-									$result = $this->upload->renameImages($settings,$dirs);
-									$filename = $result;
-									$update = true;
-								}
-							}
+                            if(!$this->id_news) {
+                                $this->add(array(
+                                    'type' => 'page'
+                                ));
+                                $page = $this->getItems('last',null,'one',false);
+                                $this->id_news = $page['id_news'];
+                            }
 
-							if($filename !== '' && $update) {
-								$this->upd(array(
-									'type' => 'img',
-									'data' => array(
-										'id_news' => $this->id_news,
-										'img_news' => $filename
-									)
-								));
-							}
+                            if ($this->id_news) {
+                                $extendData = $this->saveContent($this->id_news);
 
-							foreach ($this->content as $lang => $content) {
-								$content['id_lang'] = $lang;
-								$content['id_news'] = $this->id_news;
-								$content['alt_img'] = (!empty($content['alt_img']) ? $content['alt_img'] : NULL);
-								$content['title_img'] = (!empty($content['title_img']) ? $content['title_img'] : NULL);
-								$content['caption_img'] = (!empty($content['caption_img']) ? $content['caption_img'] : NULL);
-								$this->upd(array(
-									'type' => 'imgContent',
-									'data' => $content
-								));
-							}
+                                if(isset($this->img) || isset($this->name_img)){
+                                    $page = $this->getItems('pageLang', array('id' => $this->id_news, 'iso' => $defaultLanguage['iso_lang']), 'one', false);
+                                    $settings = array(
+                                        'name' => $this->name_img !== '' ? $this->name_img : $page['url_news'],
+                                        'edit' => $page['img_news'],
+                                        'prefix' => array('s_', 'm_', 'l_'),
+                                        'module_img' => 'news',
+                                        'attribute_img' => 'news',
+                                        'original_remove' => false
+                                    );
+                                    $dirs = array(
+                                        'upload_root_dir' => 'upload/news', //string
+                                        'upload_dir' => $this->id_news //string ou array
+                                    );
+                                    $filename = '';
+                                    $update = false;
 
-							$setEditData = $this->getItems('page',array('edit'=>$this->id_news),'all',false);
-							$setEditData = $this->setItemData($setEditData);
-							$this->template->assign('page',$setEditData[$this->id_news]);
-							$display = $this->template->fetch('news/brick/img.tpl');
-							$this->message->json_post_response(true, 'update',$display);
-						}
-						elseif (isset($this->id_news)) {
-							$extendData = $this->saveContent($this->id_news);
-							$this->message->json_post_response(true, 'update', array('result'=>$this->id_news,'extend'=>$extendData));
-						}
-						else {
-							// Initialise l'API menu des plugins core
-							$this->modelPlugins->getItems(
-								array(
-									'type'      =>  'tabs',
-									'controller'=>  $this->controller
-								)
-							);
-							$this->modelLanguage->getLanguage();
-							$setEditData = $this->getItems('page', array('edit'=>$this->edit),'all',false);
-							$setEditData = $this->setItemData($setEditData);
-							$this->template->assign('page',$setEditData[$this->edit]);
-							$this->template->display('news/edit.tpl');
-						}
+                                    if(isset($this->img)) {
+                                        $resultUpload = $this->upload->setImageUpload('img', $settings, $dirs, false);
+                                        $filename = $resultUpload['file'];
+                                        $update = true;
+                                    }
+                                    elseif(isset($this->name_img)) {
+                                        $img_news = pathinfo($page['img_news']);
+                                        $img_name = $img_news['filename'];
+
+                                        if($this->name_img !== $img_name && $this->name_img !== '') {
+                                            $result = $this->upload->renameImages($settings,$dirs);
+                                            $filename = $result;
+                                            $update = true;
+                                        }
+                                    }
+
+                                    if($filename !== '' && $update) {
+                                        $this->upd(array(
+                                            'type' => 'img',
+                                            'data' => array(
+                                                'id_news' => $this->id_news,
+                                                'img_news' => $filename
+                                            )
+                                        ));
+                                    }
+
+                                    foreach ($this->content as $lang => $content) {
+                                        $imgcontent = $content['img'];
+                                        $this->upd(array(
+                                            'type' => 'imgContent',
+                                            'data' => array(
+                                                'id_lang' => $lang,
+                                                'id_news' => $this->id_news,
+                                                'alt_img' => (!empty($imgcontent['alt_img']) ? $imgcontent['alt_img'] : NULL),
+                                                'title_img' => (!empty($imgcontent['title_img']) ? $imgcontent['title_img'] : NULL),
+                                                'caption_img' => (!empty($imgcontent['caption_img']) ? $imgcontent['caption_img'] : NULL)
+                                            )
+                                        ));
+                                    }
+
+                                    $setEditData = $this->getItems('page',array('edit'=>$this->id_news),'all',false);
+                                    $setEditData = $this->setItemData($setEditData);
+                                    $setImgData = array(
+                                        'id' => $setEditData[$this->id_news]['id_news'],
+                                        'imgSrc' => $setEditData[$this->id_news]['imgSrc']
+                                    );
+                                    $this->template->assign('data',$setImgData);
+                                    $this->template->assign('controller','news');
+                                    $display = $this->template->fetch('form/loop/img.tpl');
+                                }
+
+                                $this->message->json_post_response(true,'saved', array('result'=>$this->id_news,'extend'=>array('extend' => $extendData, 'display' => $display)));
+                            }
+
+                            $saved = true;
+                        }
+
+                        if(!$this->content && !$this->id_news && !$this->img) {
+
+                            // Initialise l'API menu des plugins core
+                            $this->modelPlugins->getItems(array(
+                                'type' => 'tabs',
+                                'controller' => $this->controller
+                            ));
+
+                            $this->modelLanguage->getLanguage();
+                            $this->template->assign('minImgSize',$this->imagesComponent->getMaxSize('news','news'));
+                            $this->template->assign('imgRatio',$this->imagesComponent->getImgRatio('news','news'));
+
+                            if($this->action === 'edit') {
+                                $setEditData = $this->getItems('page', array('edit'=>$this->edit),'all',false);
+                                $setEditData = $this->setItemData($setEditData);
+                                $this->template->assign('page',$setEditData[$this->edit]);
+                            }
+
+                            $this->template->display('news/'.$this->action.'.tpl');
+                        }
+                        elseif(!$saved) {
+                            $this->message->json_post_response(false, 'error_empty_title');
+                        }
+                        break;
+                    case 'editroot':
+                        if(!$this->content && !$this->id_news) {
+                            $this->modelLanguage->getLanguage();
+                            $root = $this->getItems('root',null,'one',false);
+                            $this->template->assign('page',$this->setRootData($root['id_page']));
+                            $this->template->display('news/root.tpl');
+                        }
+                        else {
+                            if(!$this->id_news) {
+                                $this->add(array('type' => 'root'));
+                                $root = $this->getItems('root',null,'one',false);
+                                $this->id_news = $root['id_page'];
+                            }
+
+                            if($this->id_news) {
+                                foreach ($this->content as $lang => $content) {
+                                    $content['id_page'] = $this->id_news;
+                                    $content['id_lang'] = $lang;
+                                    $content['published'] = (!isset($content['published']) ? 0 : 1);
+                                    $config = array(
+                                        'type' => 'content_root',
+                                        'data' => $content
+                                    );
+
+                                    $contentLang = $this->getItems('root_content',array('id_page' => $this->id_news, 'id_lang' => $lang),'one',false);
+
+                                    if (!$contentLang)
+                                        $this->add($config);
+                                    else
+                                        $this->upd($config);
+                                }
+                                $this->message->json_post_response(true, 'update', $this->id_news);
+                            }
+                        }
                         break;
                     case 'delete':
                         if (isset($this->name_tag)) {
                             $setTags = parent::fetchData(
                                 array('context' => 'one', 'type' => 'tag'),
-                                array(':id_news' => $this->id_news, ':id_lang' => $this->id_lang, ':name_tag' => $this->name_tag)
+                                array('id_news' => $this->id_news, 'id_lang' => $this->id_lang, 'name_tag' => $this->name_tag)
                             );
                             if ($setTags['id_tag'] != null && $setTags['rel_tag'] != null) {
                                 parent::delete(array('type' => 'tagRel'), array('id_rel' => $setTags['rel_tag']));
@@ -637,6 +718,8 @@ class backend_controller_news extends backend_db_news
                 $this->modelLanguage->getLanguage();
                 $defaultLanguage = $this->collectionLanguage->fetchData(array('context' => 'one', 'type' => 'default'));
                 $this->getItems('news', array('default_lang' => $defaultLanguage['id_lang']), 'all',true,true);
+                $nb_pages = $this->getItems('nb_pages',null,'one',false);
+                $this->template->assign('nb_pages',$nb_pages['nb']);
                 $this->data->getScheme(
                 	array('mc_news', 'mc_news_content'),
 					array('id_news', 'name_news', 'content_news', 'img_news','seo_title_news','seo_desc_news', 'last_update', 'date_publish', 'published_news'),

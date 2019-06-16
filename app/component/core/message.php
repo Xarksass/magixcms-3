@@ -61,9 +61,9 @@ class component_core_message{
      * Return a json object with the status of the post action, the notification and the eventual result of the post
      * @param bool $status
      * @param string $notify
-     * @param bool $result
-     */
-	/**
+     * @param array|mixed|null $result
+     * @param array $options
+     *
 	 * example of extended result data
 	 * $result = array(
 		'result' => 1, // can be an id for example or an array of data
@@ -72,7 +72,7 @@ class component_core_message{
 	 * the json output will be
 	 * {"status":true,"notify":...,"result":1,"id_category":2,"id_subcategory":3}
 	 */
-    public function json_post_response($status=true,$notify='save',$result = null,$options = null)
+    public function json_post_response($status = true, $notify = 'save', $result = null, $options = null)
     {
         if (is_array($options))
             $options = $options + $this->default;
@@ -80,31 +80,36 @@ class component_core_message{
             $options = $this->default;
         $options['method'] = 'return';
 
-        if($notify != null){
+        if($notify != null)
             $notify = $this->getNotify($notify,$options);
-        }else{
+        else
             $notify = null;
-        }
+
 		$extend = '';
 		if (is_array($result) && key_exists('result',$result)) {
 			$output = $result['result'];
 
 			if(key_exists('extend',$result)) {
 				if(is_array($result['extend'])) {
-                    $extend .= ',"extend":[{';
+                    //$extend .= ',';
                     $i = 0;
 					foreach ($result['extend'] as $k => $v) {
-					    if($i === 0){
+					    /*if($i === 0){
                             $extend .= '"'.$k.'":'.json_encode($v);
                         }else{
                             $extend .= ',"'.$k.'":'.json_encode($v);
-                        }
+                        }*/
+					    $extend .= ',"'.$k.'":'.json_encode($v);
 					    $i++;
 					}
-                    $extend .= '}]';
+                    //$extend .= '}]';
 				}
+				else {
+				    $extend = ',"extend":'.json_encode($result['extend']);
+                }
 			}
-		} else {
+		}
+		else {
 			$output = $result;
 		}
 

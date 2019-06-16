@@ -40,7 +40,7 @@ class frontend_model_menu extends frontend_db_menu {
 
 	/**
 	 * frontend_model_menu constructor.
-	 * @param stdClass $t
+	 * @param frontend_controller_template $t
 	 */
 	public function __construct($t = null)
 	{
@@ -89,6 +89,16 @@ class frontend_model_menu extends frontend_db_menu {
 
 	/**
 	 * @param $params
+	 * @return array
+	 */
+	public function getControllerId($params)
+	{
+		$plugin = $this->getItems('plugin_id',array('name' => $params['name']),'one',false);
+		return $plugin['id'];
+	}
+
+	/**
+	 * @param $params
 	 * @return bool
 	 */
 	public function getPluginMenuConf($params)
@@ -104,13 +114,17 @@ class frontend_model_menu extends frontend_db_menu {
 	 * @return array
 	 */
 	public function setLinksData($iso) {
-		$current = $this->modelSystem->setCurrentId();
+		$current = $this->modelSystem->setCurrentId($this->template);
 		$links = $this->getItems('links',array('iso' => $iso),'all',false);
 		$active = array('controller' => $this->controller, 'ids' => array());
 
 		foreach ($links as &$link) {
 			switch ($link['type_link']) {
+				case 'home':
+					$link['controller'] = null;
+					break;
 				case 'pages':
+					$link['controller'] = 'pages';
 					$link['url_link'] =
 						$this->routingUrl->getBuildUrl(array(
 								'type' => 'pages',
@@ -220,6 +234,9 @@ class frontend_model_menu extends frontend_db_menu {
 		}
 
 		switch ($this->controller) {
+			case 'home':
+			case 'news':
+				break;
 			case 'about':
 				if(!$this->about) $this->about = new frontend_model_about($this->template);
 				if($this->id || $this->id_parent) $active['ids'] = $this->about->getParents($this->id_parent ? $this->id_parent : $this->id);
@@ -232,6 +249,8 @@ class frontend_model_menu extends frontend_db_menu {
 				if(!$this->catalog) $this->catalog = new frontend_model_catalog($this->template);
 				if($this->id || $this->id_parent) $active['ids'] = $this->catalog->getParents($this->id_parent ? $this->id_parent : $this->id);
 				break;
+			default:
+				$active['ids'] = array($this->getControllerId(array('name' => $this->controller)));
 		}
 
 		$this->template->assign('active_link',$active);

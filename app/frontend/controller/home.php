@@ -51,7 +51,7 @@ class frontend_controller_home extends frontend_db_home
     public $lang;
 
     /**
-	 * @param stdClass $t
+	 * @param frontend_controller_template $t
      * frontend_controller_home constructor.
      */
     public function __construct($t = null){

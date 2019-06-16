@@ -59,12 +59,12 @@ class backend_model_session{
     public function redirect($connexion=false){
         if($connexion){
             if (!headers_sent()) {
-                header('location: '.http_url::getUrl().'/admin/index.php?controller=dashboard');
+                header('location: '.http_url::getUrl().'/'.PATHADMIN.'/index.php?controller=dashboard');
                 exit;
             }
         }else{
             if (!headers_sent()) {
-                header('location: '.http_url::getUrl().'/admin/index.php?controller=login');
+                header('location: '.http_url::getUrl().'/'.PATHADMIN.'/index.php?controller=login');
                 exit;
             }
         }

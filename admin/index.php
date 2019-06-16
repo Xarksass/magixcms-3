@@ -8,16 +8,9 @@ if(file_exists($baseadmin)){
 }
 require('../lib/backend.inc.php');
 $template = new backend_model_template();
-$language = new component_core_language($template,'strLanguage');
+$members = new backend_controller_login($template);
+$language = new component_core_language($template,'strLangue');
 $language->run();
-/*$members = new backend_controller_login();
-$members->checkout();
-if(http_request::isSession('keyuniqid_admin')) {
-    $home = new frontend_controller_home();
-    $home->run();
-}*/
-/*$members = new backend_controller_login();
-$members->checkout();*/
 $file_finder = new file_finder();
 $controllerFinder = $file_finder->scanDir(component_core_system::basePath().DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'backend'.DIRECTORY_SEPARATOR.'controller');
 $funcBasenameFinder = function($value) {
@@ -25,38 +18,29 @@ $funcBasenameFinder = function($value) {
 };
 $controllerCollection = array_map($funcBasenameFinder,$controllerFinder);//array('dashboard','login','employee','access','language','country','domain','setting','files','testupload','about','home','pages','news','category','catalog','product','webservice','plugins');
 $formClean = new form_inputEscape();
-if(http_request::isGet('controller')){
+if((http_request::isGet('controller') && $_GET['controller'] !== 'login') || !http_request::isGet('controller')) {
+    $members->checkout();
+}
+if(http_request::isGet('controller')) {
     $controller_name = $formClean->simpleClean($_GET['controller']);
-    if(in_array($controller_name,$controllerCollection)){
-        $routes = 'backend';
-        $plugins = null;
-        if($_GET['controller'] != 'login'){
-            $members = new backend_controller_login($template);
-            $members->checkout();
+    $routes = 'backend';
+    $plugins = null;
+
+    if (http_request::isSession('keyuniqid_admin')) {
+        $members->getAdminProfile();
+
+        if (!in_array($controller_name, $controllerCollection)) {
+            $routes = 'plugins';
+            $plugins = 'admin';
+
             if (http_request::isSession('keyuniqid_admin')) {
-            	$members->getAdminProfile();
-                $dispatcher = new component_routing_dispatcher($routes, $template, $plugins);
-                $dispatcher->dispatch();
+                $pluginsSetConfig = new backend_model_plugins();
+                $pluginsSetConfig->addConfigDir($routes, $template);
+                $pluginsSetConfig->templateDir($routes, $template, $plugins);
             }
-        }else{
-            $dispatcher = new component_routing_dispatcher($routes, $template, $plugins);
-            $dispatcher->dispatch();
-        }
-    }else{
-        $routes = 'plugins';
-        $plugins = 'admin';
-        $members = new backend_controller_login($template);
-        $members->checkout();
-        if (http_request::isSession('keyuniqid_admin')) {
-        	$members->getAdminProfile();
-            $pluginsSetConfig = new backend_model_plugins();
-            $pluginsSetConfig->addConfigDir($routes, $template);
-            $pluginsSetConfig->templateDir($routes, $template, $plugins);
-            $dispatcher = new component_routing_dispatcher($routes, $template, $plugins);
-            $dispatcher->dispatch();
         }
     }
-}else{
-    $members = new backend_controller_login($template);
-    $members->checkout();
+
+    $dispatcher = new component_routing_dispatcher($routes, $template, $plugins);
+    $dispatcher->dispatch();
 }

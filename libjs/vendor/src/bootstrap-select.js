@@ -125,6 +125,18 @@
                 e.preventDefault();
             }
         });
+
+        if($('input[name="' + $this.structure.$section + '_id"]').val() !== ''){
+            let id = $('input[name="' + $this.structure.$section + '_id"]').val();
+            let cus = $this.structure.$list.find('li[data-value="'+id+'"]');
+            //console.log(cus);
+            if(!cus.length) {
+                $this.clear();
+            } else {
+                var cu = $(cus[0]);
+                $this.select(cu);
+            }
+        }
     }
 
     DropdownSelect.prototype.toggle = function( mode ) {

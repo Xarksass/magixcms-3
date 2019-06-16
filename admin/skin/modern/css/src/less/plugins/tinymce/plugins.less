@@ -1,0 +1,40 @@
+/*
+ * Common rules for all pages
+ */
+html {
+	position: relative;
+	background: #eff1f2;
+	overflow-x: hidden;
+	display: flex;
+	justify-content: center;
+	min-height: 100%;
+}
+
+body {
+	background-color: transparent;
+	position: relative;
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	
+	> main {
+		display: flex;
+		//position: relative;
+		padding: 1rem 0 6rem;
+	}
+}
+
+.normalize-content(@headingc: same);
+.normalize-link;
+
+// --- Lead paragraphe
+.lead,
+.display {
+	font-family: @lead-font;
+}
+
+// Set selection style
+.text-select(@main-color);
+
+.adaptive-font-size();

@@ -7,7 +7,7 @@ class backend_model_sitemap{
 
     /**
      * backend_model_sitemap constructor.
-     * @param stdClass $t
+     * @param backend_controller_template $t
      */
     public function __construct($t)
     {

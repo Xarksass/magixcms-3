@@ -38,7 +38,7 @@ class frontend_model_domain extends frontend_db_domain {
 
 	/**
 	 * frontend_model_domain constructor.
-	 * @param stdClass $t
+	 * @param frontend_controller_template $t
 	 */
 	public function __construct($t = null)
 	{

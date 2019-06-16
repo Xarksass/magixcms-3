@@ -210,5 +210,36 @@ class debug_logger {
             $firephp->error($row);
         }
     }
+
+    /**
+     * @return string
+     */
+    private function generateCallTrace()
+    {
+        $e = new Exception();
+        $trace = explode("\n", $e->getTraceAsString());
+        // reverse array to make steps line up chronologically
+        $trace = array_reverse($trace);
+        array_shift($trace); // remove {main}
+        array_pop($trace); // remove call to this method
+        $length = count($trace);
+        $result = array();
+
+        for ($i = 0; $i < $length; $i++)
+        {
+            $result[] = ($i + 1)  . ')' . substr($trace[$i], strpos($trace[$i], ' ')); // replace '#someNum' with '$i)', set the right ordering
+        }
+
+        return "\t" . implode("\n\t", $result);
+    }
+
+    /**
+     * @param $type
+     * @param $name
+     * @param string $archive
+     */
+    public function backtrace($type, $name, $archive = self::LOG_MONTH) {
+        $this->log($type, $name, $this->generateCallTrace(), $archive);
+    }
 }
 ?>

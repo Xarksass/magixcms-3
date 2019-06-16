@@ -24,7 +24,7 @@ class backend_db_category
 						}
 					}
 
-					$sql = "SELECT p.id_cat, c.name_cat, c.content_cat, c.seo_title_cat, c.seo_desc_cat, p.menu_cat, p.date_register, p.img_cat
+					$sql = "SELECT p.id_cat, c.name_cat, c.resume_cat, c.content_cat, c.seo_title_cat, c.seo_desc_cat, p.menu_cat, p.date_register, p.img_cat
 							FROM mc_catalog_cat AS p
 								JOIN mc_catalog_cat_content AS c USING ( id_cat )
 								JOIN mc_lang AS lang ON ( c.id_lang = lang.id_lang )
@@ -45,6 +45,15 @@ class backend_db_category
 										case 'menu_cat':
 											$cond .= 'p.'.$key.' = :'.$p.' ';
 											break;
+                                        case 'img_cat':
+                                            $cond .= 'p.'.$key.' IS '.($p ? 'NOT ' : '').'NULL';
+                                            break;
+                                        case 'resume_cat':
+                                        case 'content_cat':
+                                        case 'seo_title_cat':
+                                        case 'seo_desc_cat':
+                                            $cond .= 'c.'.$key.' IS '.($p ? 'NOT ' : '').'NULL';
+                                            break;
 										case 'published_cat':
 											$cond .= 'c.'.$key.' = :'.$p.' ';
 											break;
@@ -64,7 +73,7 @@ class backend_db_category
 								}
 							}
 
-							$sql = "SELECT p.id_cat, c.name_cat, c.content_cat, c.seo_title_cat, c.seo_desc_cat, p.menu_cat, p.date_register, p.img_cat, ca.name_cat AS parent_cat
+							$sql = "SELECT p.id_cat, c.name_cat, c.resume_cat, c.content_cat, c.seo_title_cat, c.seo_desc_cat, p.menu_cat, p.date_register, p.img_cat, ca.name_cat AS parent_cat
 									FROM mc_catalog_cat AS p
 										JOIN mc_catalog_cat_content AS c USING ( id_cat )
 										JOIN mc_lang AS lang ON ( c.id_lang = lang.id_lang )
@@ -203,6 +212,13 @@ class backend_db_category
 				case 'page':
 					$sql = 'SELECT * FROM mc_catalog_cat WHERE `id_cat` = :id_cat';
 					break;
+                case 'page_content':
+                    $sql = 'SELECT p.*,c.*,lang.*
+							FROM mc_catalog_cat AS p
+							JOIN mc_catalog_cat_content AS c USING(id_cat)
+							JOIN mc_lang AS lang ON(c.id_lang = lang.id_lang)
+							WHERE `id_cat` = :id_cat AND c.`id_lang` = :id_lang';
+                    break;
 				case 'pageLang':
 					$sql = 'SELECT p.*,c.*,lang.*
 							FROM mc_catalog_cat AS p
@@ -211,6 +227,9 @@ class backend_db_category
 							WHERE p.id_cat = :id
 							AND lang.iso_lang = :iso';
 					break;
+                case 'nb_pages':
+                    $sql = "SELECT COUNT(p.id_cat) as nb FROM mc_catalog_cat AS p";
+                    break;
 			}
 
 			return $sql ? component_routing_db::layer()->fetch($sql, $params) : null;

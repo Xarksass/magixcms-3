@@ -51,7 +51,7 @@ class frontend_controller_cookie {
 	public $cookie,$source;
 
 	/**
-	 * @param stdClass $t
+	 * @param frontend_controller_template $t
 	 * frontend_controller_home constructor.
 	 */
 	public function __construct($t = null){

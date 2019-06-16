@@ -7,11 +7,12 @@ class backend_model_data extends backend_db_scheme{
 	 * backend_model_data constructor.
 	 * @param object $caller - object class of the class that called the model
 	 */
-	public function __construct($caller)
+	public function __construct($caller,$t)
 	{
-		$this->caller = $caller;
-		$this->db = (new ReflectionClass(get_parent_class($caller)))->newInstance();
-		$this->template = new backend_model_template();
+        //$this->db = (new ReflectionClass(get_parent_class($caller)))->newInstance();
+        $this->caller = new ReflectionClass($caller);
+		$this->db = $this->caller->getParentClass()->newInstance();
+		$this->template = $t ? $t : new backend_model_template();
 		$formClean = new form_inputEscape();
 
 		// --- Search
@@ -100,7 +101,7 @@ class backend_model_data extends backend_db_scheme{
 	public function getItems($type, $id = null, $context = null, $assign = true, $pagination = false) {
 		$data = $this->setItems($context, $type, $id, ($pagination || $this->page) ? $this->page : null, ($pagination || $this->page) ? $this->offset : null);
 		if($assign) {
-			$varName = gettype($assign) == 'string' ? $assign : $type;
+			$varName = is_string($assign) ? $assign : $type;
 			$this->template->assign($varName,$data);
 		}
 		if(isset($this->page) || $pagination) {
@@ -134,7 +135,7 @@ class backend_model_data extends backend_db_scheme{
 			$column = array(
 				'type' => 'text',
 				'class' => '',
-				'title' => $pre,
+				'title' => $col,
 				'input' => array(
 					'type' => 'text'
 				)/*,

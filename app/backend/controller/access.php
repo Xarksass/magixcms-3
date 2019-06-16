@@ -8,7 +8,7 @@ class backend_controller_access extends backend_db_access{
     public $id_role,$role_name,$id_module,$view,$append,$edit_access,$del,$action_access;
 
 	/**
-	 * @param stdClass $t
+	 * @param backend_controller_template $t
 	 * backend_controller_access constructor.
 	 */
     public function __construct($t = null)
@@ -16,7 +16,7 @@ class backend_controller_access extends backend_db_access{
         $this->template = $t ? $t : new backend_model_template;
         $this->message = new component_core_message($this->template);
         $this->header = new http_header();
-        $this->data = new backend_model_data($this);
+        $this->data = new backend_model_data($this, $this->template);
         $formClean = new form_inputEscape();
 
         // --- GET

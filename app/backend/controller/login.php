@@ -67,7 +67,8 @@ class backend_controller_login extends backend_db_employee{
 		$stay_logged,
 		$kpl,
 		$token,
-		$logout;
+		$logout,
+        $iso;
 
     public static $notify = '';
 
@@ -78,12 +79,12 @@ class backend_controller_login extends backend_db_employee{
 
 	/**
 	 * backend_controller_login constructor.
-	 * @param stdClass $t
+	 * @param backend_controller_template $t
 	 */
     public function __construct($t = null){
 		$this->template = $t ? $t : new backend_model_template;
 		$this->header = new http_header();
-		$this->data = new backend_model_data($this);
+		$this->data = new backend_model_data($this, $this->template);
         $this->message = new component_core_message($this->template);
 		$this->mail = new mail_swift('mail');
 		$this->modelDomain = new backend_controller_domain($t);
@@ -115,6 +116,11 @@ class backend_controller_login extends backend_db_employee{
 		if (http_request::isGet('t')) {
 			$this->ticket_passwd = $formClean->simpleClean($_GET['t']);
 		}
+
+		// --- Change Language
+        if (http_request::isGet('iso')) {
+            $this->iso = $formClean->simpleClean($_GET['iso']);
+        }
 
         $this->httpSession = new http_session($this->settings['ssl']);
         $this->session = new backend_model_session();
@@ -197,9 +203,18 @@ class backend_controller_login extends backend_db_employee{
 							setcookie($hash,$expires,0,'/',$cparams['domain'],($this->settings['ssl'] ? true : false),true);
 						}
 
-                        $this->session->openSession(array('id_admin' => $account['id_admin'], 'id_admin_session' => session_id(), 'keyuniqid_admin' => $account['keyuniqid_admin'], 'expires' => ($this->stay_logged ? $expires : null)));
+                        $this->session->openSession(
+                            array(
+                                'id_admin' => $account['id_admin'],
+                                'id_admin_session' => session_id(),
+                                'keyuniqid_admin' => $account['keyuniqid_admin'],
+                                'expires' => ($this->stay_logged ? $expires : null)
+                            )
+                        );
 
                         $array_sess = array(
+							$this->template->indexLang => $account['lang_admin'],
+							'theme' => $account['theme_admin'],
 							'id_admin' => $account['id_admin'],
 							'email_admin' => $account['email_admin'],
 							'keyuniqid_admin' => $account['keyuniqid_admin']
@@ -309,8 +324,6 @@ class backend_controller_login extends backend_db_employee{
      * Sécurisation de la session
      */
     public function secure(){
-        //ini_set("session.cookie_lifetime",3600);
-        //$this->httpSession->start('lang');
         $compareSessionId = $this->session->compareSessionId();
         if (!isset($_SESSION["email_admin"]) || empty($_SESSION['email_admin'])){
             if (!isset($this->email_admin)) {
@@ -319,6 +332,12 @@ class backend_controller_login extends backend_db_employee{
         }
         elseif(!$compareSessionId['id_admin_session']){
             $this->session->redirect(false);
+        }
+        elseif($this->settings['autologout'] && $compareSessionId['expires'] === null) {
+            if(time() > ($compareSessionId['last_modified_session'] + ($this->settings['timeout'] * 60)) ) {
+                $this->logout = true;
+                $this->close();
+            }
         }
     }
 
@@ -330,10 +349,6 @@ class backend_controller_login extends backend_db_employee{
         if (isset($this->logout)) {
             if (isset($_SESSION['email_admin']) AND isset($_SESSION['keyuniqid_admin'])) {
                 $this->session->closeSession();
-                /*session_unset();
-                $_SESSION = array();
-                session_destroy();
-                session_start();*/
 				$this->httpSession->close('mc_admin');
                 $this->session->redirect(false);
             }
@@ -409,6 +424,16 @@ class backend_controller_login extends backend_db_employee{
 	}
 
     /**
+     * Set the cookie containing the iso of the current language
+     * @param string $iso
+     * @param int|null $expire
+     */
+	private function setCookieLang($iso, $expire = null) {
+	    if($expire === null) $expire = time() + (10 * 365 * 24 * 60 * 60);
+        setcookie($this->template->indexLang,$iso,$expire);
+    }
+
+    /**
      * Execution des scripts pour les sessions et le login
      */
     public function run(){
@@ -444,6 +469,17 @@ class backend_controller_login extends backend_db_employee{
 						$this->template->display('login/npwd.tpl');
 					}
 					break;
+                case 'changelanguage':
+                    if(isset($this->iso)) {
+                        $this->httpSession->start('lang');
+                        $_SESSION[$this->template->indexLang] = $this->iso;
+                        $this->setCookieLang($this->iso);
+                        $this->message->json_post_response(true);
+                    }
+                    else {
+                        $this->message->json_post_response(false);
+                    }
+                    break;
 			}
         }
         else {

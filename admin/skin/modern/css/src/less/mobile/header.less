@@ -1,0 +1,33 @@
+body > header {
+	position: fixed;
+	display: flex;
+	align-items: center;
+	background: #fff;
+	padding: 1rem;
+	//box-shadow: 0 0 5px rgba(0,0,0,.1);
+	.shadow(1);
+
+	h1 {
+		margin: 0;
+		white-space: nowrap;
+		
+		a, a:visited, a:active {
+			color: @text-color;
+		}
+	}
+	
+	.toolbar {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		margin-left: auto;
+		
+		> * {
+			margin-left: 1rem;
+			
+			&:first-child {
+				margin-left: 0;
+			}
+		}
+	}
+}

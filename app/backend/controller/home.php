@@ -3,18 +3,18 @@ class backend_controller_home extends backend_db_home{
 
     public $edit, $action, $tabs;
     protected $controller, $message, $template, $header, $data, $modelLanguage, $modelPlugins, $plugin;
-    public $content;
+    public $content, $id_page;
 
 	/**
 	 * backend_controller_home constructor.
-	 * @param stdClass $t
+	 * @param backend_controller_template $t
 	 */
     public function __construct($t = null)
     {
         $this->template = $t ? $t : new backend_model_template;
         $this->message = new component_core_message($this->template);
         $this->header = new http_header();
-        $this->data = new backend_model_data($this);
+        $this->data = new backend_model_data($this, $this->template);
         $formClean = new form_inputEscape();
         $this->modelLanguage = new backend_model_language($this->template);
         $this->modelPlugins = new backend_model_plugins();
@@ -34,14 +34,9 @@ class backend_controller_home extends backend_db_home{
         if (http_request::isGet('tabs')) {
             $this->tabs = $formClean->simpleClean($_GET['tabs']);
         }
-        if (http_request::isPost('content')) {
-            $array = $_POST['content'];
-            foreach($array as $key => $arr) {
-                foreach($arr as $k => $v) {
-                    $array[$key][$k] = ($k == 'content_page') ? $formClean->cleanQuote($v) : $formClean->simpleClean($v);
-                }
-            }
-            $this->content = $array;
+        if (http_request::isPost('content')) $this->content = (array)$formClean->arrayClean($_POST['content']);
+        if (http_request::isPost('id')) {
+            $this->id_page = $formClean->numeric($_POST['id']);
         }
 
         if(http_request::isGet('plugin')){
@@ -62,77 +57,68 @@ class backend_controller_home extends backend_db_home{
 	}
 
     /**
-     * @return mixed|null
-     */
-    private function setItemData(){
-        return parent::fetchData(array('context'=>'one','type'=>'root'));
-    }
-
-    /**
      * @return array
      */
-    private function setItemsData(){
-        $data = parent::fetchData(array('context'=>'all','type'=>'pages'));
+    private function setItemsData($id){
+        $data = $this->getItems('pages',null,'all',false);
         $arr = array();
         foreach ($data as $page) {
-            if (!array_key_exists($page['id_page'], $arr)) {
-                $arr[$page['id_page']] = array();
-                $arr[$page['id_page']]['id_page'] = $page['id_page'];
-                $arr[$page['idpage']]['date_register'] = $page['date_register'];
+            if($page['id_page'] === $id) {
+                if (!array_key_exists($id, $arr)) {
+                    $arr[$id] = array();
+                    $arr[$id]['id_page'] = $page['id_page'];
+                    $arr[$id]['date_register'] = $page['date_register'];
+                }
+                $arr[$id]['content'][$page['id_lang']] = array(
+                    'id_lang' => $page['id_lang'],
+                    'title_page' => $page['title_page'],
+                    'content_page' => $page['content_page'],
+                    'seo_title_page' => $page['seo_title_page'],
+                    'seo_desc_page' => $page['seo_desc_page'],
+                    'published' => $page['published']
+                );
             }
-            $arr[$page['id_page']]['content'][$page['id_lang']] = array(
-                'id_lang' => $page['id_lang'],
-                'title_page' => $page['title_page'],
-                'content_page' => $page['content_page'],
-                'seo_title_page' => $page['seo_title_page'],
-                'seo_desc_page' => $page['seo_desc_page'],
-                'published' => $page['published']
-            );
         }
-        return $arr;
+        return $arr[$id];
     }
+
+    /**
+     * Update data
+     * @param $data
+     */
+    private function add($data)
+    {
+        switch ($data['type']) {
+            case 'home':
+                parent::insert(array('type' => $data['type']));
+                break;
+            case 'content':
+                parent::insert(
+                    array(
+                        'type' => $data['type']
+                    ),
+                    $data['data']
+                );
+                break;
+        }
+    }
+
     /**
      * Mise a jour des données
+     * @param $data
      */
-    private function save()
+    private function upd($data)
     {
-        $fetchRootData = parent::fetchData(array('context'=>'one','type'=>'root'));
-        if($fetchRootData != null){
-            $id_page = $fetchRootData['id_page'];
-        }else{
-            parent::insert(array('type'=>'newHome'));
-            $newData = parent::fetchData(array('context'=>'one','type'=>'root'));
-            $id_page = $newData['id_page'];
-        }
-
-        if($id_page) {
-            foreach ($this->content as $lang => $content) {
-                $content['published'] = (!isset($content['published']) ? 0 : 1);
-                if (parent::fetchData(array('context' => 'one', 'type' => 'content'), array('id_page' => $id_page, 'id_lang' => $lang)) != null) {
-                    parent::update(array('type' => 'content'), array(
-                            'title_page'        => $content['title_page'],
-                            'content_page'      => $content['content_page'],
-                            'seo_title_page'    => $content['seo_title_page'],
-                            'seo_desc_page'     => $content['seo_desc_page'],
-                            'published'         => $content['published'],
-                            'id_page'           => $id_page,
-                            'id_lang'           => $lang
-                        )
-                    );
-                } else {
-                    parent::insert(array('type' => 'newContent'), array(
-                            'title_page'        => $content['title_page'],
-                            'content_page'      => $content['content_page'],
-                            'seo_title_page'    => $content['seo_title_page'],
-                            'seo_desc_page'     => $content['seo_desc_page'],
-                            'published'         => $content['published'],
-                            'id_page'           => $id_page,
-                            'id_lang'           => $lang
-                        )
-                    );
-                }
-            }
-            $this->message->json_post_response(true, 'update', $id_page);
+        switch ($data['type']) {
+            case 'content':
+                parent::update(
+                    array(
+                        'context' => $data['context'],
+                        'type' => $data['type']
+                    ),
+                    $data['data']
+                );
+                break;
         }
     }
 
@@ -152,19 +138,41 @@ class backend_controller_home extends backend_db_home{
             if(isset($this->action)) {
                 switch ($this->action) {
                     case 'edit':
-                        $this->save();
+                        if(!$this->id_page) {
+                            $this->add(array('type' => 'home'));
+                            $home = $this->getItems('root',null,'one',false);
+                            $this->id_page = $home['id_page'];
+                        }
+
+                        if($this->id_page) {
+                            foreach ($this->content as $lang => $content) {
+                                $content['id_page'] = $this->id_page;
+                                $content['id_lang'] = $lang;
+                                $content['published'] = (!isset($content['published']) ? 0 : 1);
+                                $config = array(
+                                    'type' => 'content',
+                                    'data' => $content
+                                );
+
+                                $contentLang = $this->getItems('content',array('id_page' => $this->id_page, 'id_lang' => $lang),'one',false);
+
+                                if (!$contentLang)
+                                    $this->add($config);
+                                else
+                                    $this->upd($config);
+                            }
+                            $this->message->json_post_response(true, 'update', $this->id_page);
+                        }
                         break;
                 }
-            }else{
+            }
+            else {
                 $this->modelLanguage->getLanguage();
-                $last = $this->setItemData();
-                $pages = $this->setItemsData();
-                $this->template->assign('home',$last);
-                $this->template->assign('page', $pages[$last['id_page']]);
+                $home = $this->getItems('root',null,'one',false);
+                $this->template->assign('page',$this->setItemsData($home['id_page']));
                 $this->template->display('home/edit.tpl');
             }
         }
     }
 
 }
-?>

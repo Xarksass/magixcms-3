@@ -68,13 +68,15 @@ class component_routing_dispatcher{
 		//$this->getCssInliner();
 
 		if ($this->router === 'frontend' || ($this->router === 'plugins' && $this->plugins === 'public')) {
-			$this->template->assign('theme',$this->template->theme);
 			$this->template->assign('domain',$this->template->domain);
 			$this->template->assign('dataLang',$this->template->langs);
 			$this->template->assign('defaultLang',$this->template->defaultLang);
+            $this->template->assign('defaultDomain',$this->template->defaultDomain);
             $modelLogo = new frontend_model_logo($this->template);
             $this->template->assign('logo', $modelLogo->getLogoData());
             $this->template->assign('favicon', $modelLogo->getFaviconData());
+            $this->template->assign('social', $modelLogo->getImageSocial());
+            $this->template->assign('homescreen', $modelLogo->getHomescreen());
 			$modelAbout = new frontend_model_about($this->template);
 			$this->template->assign('about', $modelAbout->getContentData());
 			$this->template->assign('companyData', $modelAbout->getCompanyData());
@@ -84,6 +86,9 @@ class component_routing_dispatcher{
 			$this->template->assign('shareUrls',$modelShare->getShareUrl());
 			$this->template->assign('shareConfig',$modelShare->getShareConfig());
 		}
+		elseif ($this->router === 'backend') {
+            $this->template->assign('baseadmin',PATHADMIN);
+        }
     }
 
 	/**
@@ -186,6 +191,7 @@ class component_routing_dispatcher{
 		$this->template->assign('url',http_url::getUrl());
 		$lang = $this->template->lang;
 		$this->template->assign('lang',$lang);
+        $this->template->assign('theme',$this->template->theme);
 
     	if($this->http_error) {
 			$this->getError($this->http_error);

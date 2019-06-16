@@ -98,7 +98,7 @@ class backend_db_employee
 							WHERE em.keyuniqid_admin = :keyuniqid_admin';
 					break;
 				case 'sid':
-					$sql = 'SELECT id_admin_session,id_admin FROM mc_admin_session WHERE id_admin_session = :id_admin_session';
+					$sql = 'SELECT id_admin_session,id_admin,UNIX_TIMESTAMP(last_modified_session), expires as last_modified_session FROM mc_admin_session WHERE id_admin_session = :id_admin_session';
 					$params = array('id_admin_session' => session_id());
 					break;
 				case 'currentAccess':

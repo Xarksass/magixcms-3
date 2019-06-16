@@ -50,10 +50,10 @@ class backend_db_home{
 		$sql = '';
 
 		switch ($config['type']) {
-			case 'newHome':
+			case 'home':
 				$sql = 'INSERT INTO `mc_home_page`(`date_register`) VALUES (NOW())';
 				break;
-			case 'newContent':
+			case 'content':
 				$sql = 'INSERT INTO `mc_home_page_content`(id_page,id_lang,title_page,content_page,seo_title_page,seo_desc_page,published) 
 				  		VALUES (:id_page,:id_lang,:title_page,:content_page,:seo_title_page,:seo_desc_page,:published)';
 				break;

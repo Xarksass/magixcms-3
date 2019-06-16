@@ -34,6 +34,31 @@ return array(
         '//libjs/vendor/globalize.js',
         '//libjs/vendor/globalize/message.js'
     ),
+    'modernjs' => array(
+        '//'.PATHADMIN.'/libjs/bootstrap.min.js',
+        '//libjs/vendor/jquery.form.4.2.1.min.js',
+        '//libjs/vendor/jquery.validate.1.17.0.min.js',
+        '//libjs/vendor/redirect.min.js',
+        '//libjs/vendor/jimagine/plugins/jquery.jmRequest.min.js',
+        '//'.PATHADMIN.'/libjs/iscroll.min.js',
+        '//'.PATHADMIN.'/libjs/loader.min.js',
+        '//'.PATHADMIN.'/libjs/overlay.min.js',
+        '//'.PATHADMIN.'/libjs/form.min.js'
+    ),
+    'inputjs' => array(
+        '//libjs/vendor/moment.min.js',
+        '//libjs/vendor/typeahead.bundle.js',
+        '//libjs/vendor/bootstrap-tagsinput.js',
+        '//libjs/vendor/bootstrap-toggle.min.js',
+        '//libjs/vendor/bootstrap-colorpicker.min.js',
+        '//libjs/vendor/jquery.formatter.min.js'
+    ),
+    'inputcss' => array(
+        '//libcss/bootstrap-datetimepicker.min.css',
+        '//libcss/bootstrap-colorpicker.min.css',
+        '//libcss/bootstrap-tagsinput.css',
+        '//libcss/bootstrap-tagsinput-typeahead.css'
+    ),
     'publiccss' => array(
         //'//'.PATHADMIN.'/template/css/bootstrap/critical.min.css',
         //'//'.PATHADMIN.'/template/css/bootstrap/bootstrap.min.css',
@@ -45,8 +70,8 @@ return array(
         '//'.PATHADMIN.'/template/css/bootstrap-tagsinput-typeahead.css',
     ),
     'tinymce' => array(
-        '//'.PATHADMIN.'/template/js/vendor/tiny_mce.'.VERSION_EDITOR.'/jquery.tinymce.min.js',
-        '//'.PATHADMIN.'/template/js/tinymce-config.min.js'
+        '//'.PATHADMIN.'/libjs/vendors/tiny_mce.'.VERSION_EDITOR.'/jquery.tinymce.min.js',
+        '//'.PATHADMIN.'/libjs/tinymce-config.slim.min.js'
     ),
     'pdfcss' => array(
         '//'.PATHADMIN.'/template/css/pdf/print.min.css',

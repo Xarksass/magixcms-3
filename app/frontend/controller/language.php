@@ -3,7 +3,7 @@ class frontend_controller_language {
     protected $template, $arrayTools;
 
 	/**
-	 * @param stdClass $t
+	 * @param frontend_controller_template $t
 	 * frontend_controller_language constructor.
 	 */
     public function __construct($t = null)

@@ -46,7 +46,7 @@ class frontend_model_news extends frontend_db_news {
 
     /**
      * frontend_model_news constructor.
-     * @param stdClass $t
+     * @param frontend_controller_template $t
      * @throws Exception
      */
     public function __construct($t = null)

@@ -16,7 +16,10 @@ class backend_model_language{
         $data = $this->collectionLanguage->fetchData(array('context'=>'all','type'=>'langs'));
         foreach ($data as $key) {
             $id_lang[]  = $key['id_lang'];
-            $iso_lang[] = $key['iso_lang'];
+            $iso_lang[] = array(
+                'iso' => $key['iso_lang'],
+                'name' => $key['name_lang']
+            );
         }
         return array_combine($id_lang, $iso_lang);
     }
@@ -29,4 +32,3 @@ class backend_model_language{
         $this->template->assign('langs',$newsData);
     }
 }
-?>

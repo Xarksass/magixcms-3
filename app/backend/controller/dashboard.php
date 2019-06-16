@@ -44,7 +44,7 @@ class backend_controller_dashboard{
     public $http_error;
 
 	/**
-	 * @param stdClass $t
+	 * @param backend_model_template $t
 	 * backend_controller_dashboard constructor.
 	 */
     public function __construct($t = null){
@@ -81,7 +81,8 @@ class backend_controller_dashboard{
             );
 
             $this->template->display('error/index.tpl');
-        }else{
+        }
+        else {
             $this->employee->getItemsEmployee();
 			$this->news->getItemsNews();
 			$this->pages->getItemsPages();

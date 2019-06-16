@@ -5,11 +5,9 @@ $language = new component_core_language($template,'strLangue');
 $language->run();
 $controllerCollection = array('home','about','pages','news','catalog','cookie','webservice','service');
 $controller_name = http_request::isGet('controller') ? form_inputEscape::simpleClean($_GET['controller']) : 'home';
-if(in_array($controller_name,$controllerCollection)){
-    $routes = 'frontend';
-    $plugins = null;
-}
-else {
+$routes = 'frontend';
+$plugins = null;
+if(!in_array($controller_name,$controllerCollection)){
     $routes = 'plugins';
     $plugins = 'public';
     $pluginsSetConfig = new frontend_model_plugins();

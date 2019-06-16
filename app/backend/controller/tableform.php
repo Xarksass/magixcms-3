@@ -56,7 +56,7 @@ class backend_controller_tableform
 			$this->template->assign('dlt',$results['params']['dlt']);
 			$this->template->assign('readonly',$results['params']['readonly']);
 			$this->template->assign('cClass',$results['params']['cClass']);
-			$display = $this->template->fetch('section/form/loop/rows-3.tpl');
+			$display = $this->template->fetch('form/table-form/loop/rows.tpl');
 			$this->message->json_post_response(true,'',$display);
 		}
 		else {

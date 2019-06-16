@@ -82,6 +82,66 @@ class component_files_images{
     }
 
     /**
+     * @param $mod
+     * @param $attr
+     * @return array|mixed|null
+     */
+    public function getImgRatio($mod, $attr) {
+        $confs = $this->getConfigItems(array('module_img' => $mod,'attribute_img' => $attr));
+        $large = null;
+        $medium = null;
+        $small = null;
+        $ratio = 1.618;
+        $ratioBase = null;
+
+        if(is_array($confs)) {
+            foreach($confs as $conf) {
+                if($conf['type_img'] === 'large') $large = $conf;
+                if($conf['type_img'] === 'medium') $medium = $conf;
+                if($conf['type_img'] === 'small') $small = $conf;
+            }
+        }
+
+        if(is_array($large) && $large['resize_img'] === 'adaptative') $ratioBase = $large;
+        elseif(is_array($medium) && $medium['resize_img'] === 'adaptative') $ratioBase = $medium;
+        elseif(is_array($small) && $small['resize_img'] === 'adaptative') $ratioBase = $small;
+
+        if($ratioBase !== null) {
+            $ratio = $ratioBase['width_img'] / $ratioBase['height_img'];
+        }
+
+        return $ratio;
+    }
+
+    /**
+     * @param $mod
+     * @param $attr
+     * @return array|mixed|null
+     */
+    public function getMaxSize($mod, $attr) {
+        $confs = $this->getConfigItems(array('module_img' => $mod,'attribute_img' => $attr));
+        $large = null;
+        $medium = null;
+        $small = null;
+
+        if(is_array($confs)) {
+            foreach($confs as $conf) {
+                if($conf['type_img'] === 'large') {
+                    $large = $conf;
+                }
+                if($conf['type_img'] === 'medium') {
+                    $medium = $conf;
+                }
+                if($conf['type_img'] === 'small') {
+                    $small = $conf;
+                }
+            }
+        }
+
+        return is_array($large) ? $large : (is_array($medium) ? $medium : (is_array($small) ? $small : null));
+    }
+
+    /**
      * @param $config
      * @param $data
      * @return array

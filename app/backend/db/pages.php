@@ -46,6 +46,15 @@ class backend_db_pages
 										case 'menu_pages':
 											$cond .= 'p.'.$key.' = :'.$p.' ';
 											break;
+                                        case 'img_pages':
+                                            $cond .= 'p.'.$key.' IS '.($p ? 'NOT ' : '').'NULL';
+                                            break;
+                                        case 'resume_pages':
+                                        case 'content_pages':
+                                        case 'seo_title_pages':
+                                        case 'seo_desc_pages':
+                                            $cond .= 'c.'.$key.' IS '.($p ? 'NOT ' : '').'NULL';
+                                            break;
 										case 'published_pages':
 											$cond .= 'c.'.$key.' = :'.$p.' ';
 											break;
@@ -60,7 +69,7 @@ class backend_db_pages
 											$cond .= "p.".$key." LIKE CONCAT('%', :".$p.", '%') ";
 											break;
 									}
-									$params[$p] = $q;
+									if(!in_array($key,array('img_pages','resume_pages','content_pages','seo_title_pages','seo_desc_pages'))) $params[$p] = $q;
 									$nbc++;
 								}
 							}
@@ -141,10 +150,28 @@ class backend_db_pages
 							ORDER BY p.id_pages DESC";
 					break;
 				case 'page':
-					$sql = 'SELECT p.*,c.*,lang.*
+					$sql = 'SELECT 
+                                p.*,
+                                c.id_content,
+                                c.name_pages,
+                                c.url_pages,
+                                c.resume_pages,
+                                c.content_pages,
+                                c.alt_img,
+                                c.title_img,
+                                c.caption_img,
+                                c.seo_title_pages,
+                                c.seo_desc_pages,
+                                c.last_update as last_content_update,
+                                c.published_pages,
+                                lang.id_lang,
+                                lang.iso_lang,
+                                lang.name_lang,
+                                lang.default_lang,
+                                lang.active_lang
 							FROM mc_cms_page AS p
-							JOIN mc_cms_page_content AS c USING(id_pages)
-							JOIN mc_lang AS lang ON(c.id_lang = lang.id_lang)
+							LEFT JOIN mc_cms_page_content AS c USING(id_pages)
+							LEFT JOIN mc_lang AS lang ON(c.id_lang = lang.id_lang)
 							WHERE p.id_pages = :edit';
 					break;
 				case 'img':
@@ -177,11 +204,21 @@ class backend_db_pages
 				case 'root':
 					$sql = 'SELECT * FROM mc_cms_page ORDER BY id_pages DESC LIMIT 0,1';
 					break;
+				case 'aboutPage':
+					$sql = 'SELECT * FROM mc_cms_page WHERE about_pages = 1 ORDER BY id_pages DESC LIMIT 0,1';
+					break;
 				case 'content':
 					$sql = 'SELECT * FROM `mc_cms_page_content` WHERE `id_pages` = :id_pages AND `id_lang` = :id_lang';
 					break;
 				case 'page':
 					$sql = 'SELECT * FROM mc_cms_page WHERE `id_pages` = :id_pages';
+					break;
+				case 'page_content':
+                    $sql = 'SELECT p.*,c.*,lang.*
+							FROM mc_cms_page AS p
+							JOIN mc_cms_page_content AS c USING(id_pages)
+							JOIN mc_lang AS lang ON(c.id_lang = lang.id_lang)
+							WHERE `id_pages` = :id_pages AND c.`id_lang` = :id_lang';
 					break;
 				case 'pageLang':
 					$sql = 'SELECT p.*,c.*,lang.*
@@ -191,6 +228,9 @@ class backend_db_pages
 							WHERE p.id_pages = :id
 							AND lang.iso_lang = :iso';
 					break;
+                case 'nb_pages':
+                    $sql = "SELECT COUNT(p.id_pages) as nb FROM mc_cms_page AS p";
+                    break;
 			}
 
 			return $sql ? component_routing_db::layer()->fetch($sql, $params) : null;
@@ -211,8 +251,8 @@ class backend_db_pages
 		switch ($config['type']) {
 			case 'page':
 				$cond = $params['id_parent'] != NULL ? ' IN ('.$params['id_parent'].')' : ' IS NULL';
-				$sql = "INSERT INTO `mc_cms_page`(id_parent,menu_pages,order_pages,date_register) 
-						SELECT :id_parent,:menu_pages,COUNT(id_pages),NOW() FROM mc_cms_page WHERE id_parent".$cond;
+				$sql = "INSERT INTO `mc_cms_page`(id_parent,menu_pages,about_pages,order_pages,date_register) 
+						SELECT :id_parent,:menu_pages,:about_pages,COUNT(id_pages),NOW() FROM mc_cms_page WHERE id_parent".$cond;
 				break;
 			case 'content':
 				$sql = 'INSERT INTO `mc_cms_page_content`(id_pages,id_lang,name_pages,url_pages,resume_pages,content_pages,seo_title_pages,seo_desc_pages,published_pages) 
@@ -247,7 +287,9 @@ class backend_db_pages
 				$sql = 'UPDATE mc_cms_page 
 							SET 
 								id_parent = :id_parent,
-							    menu_pages = :menu_pages
+							    menu_pages = :menu_pages,
+							    about_pages = :about_pages,
+							    last_update = NOW()
 							WHERE id_pages = :id_pages';
 				break;
 			case 'content':

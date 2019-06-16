@@ -44,7 +44,7 @@ class frontend_model_pages extends frontend_db_pages{
 
 	/**
 	 * frontend_model_pages constructor.
-	 * @param stdClass $t
+	 * @param frontend_controller_template $t
 	 */
     public function __construct($t = null)
     {
